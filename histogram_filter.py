@@ -1,4 +1,4 @@
-import pygame
+import pygame as pg
 import sys
 import random
 from PIL import Image
@@ -35,72 +35,88 @@ pMiss = 0.1
 pGood = .8
 pOvershoot = 0.1
 pUndershoot = 0.1
-panel_height = 200
+panel_height = 40
 
 measurement_probs = {'red|red': pHit, 'green|red':pMiss, 'green|green':pHit, 'red|green':pMiss}
 Z = ['red', 'red']
 
 def main():
-    global SCREEN, CLOCK, robot_row, robot_col, probs
-    pygame.init()
-    SCREEN = pygame.display.set_mode((win_width*2, win_height+panel_height))
-    CLOCK = pygame.time.Clock()
+    global SCREEN, CLOCK, robot_row, robot_col, probs, COLOR_INACTIVE, COLOR_ACTIVE, FONT
+    pg.init()
+    SCREEN = pg.display.set_mode((win_width*2, win_height+panel_height))
+    CLOCK = pg.time.Clock()
     SCREEN.fill(black)
-    active = False
-    input_box = pygame.Rect(0, win_height, 50, win_height+50)
+    # used by InputBox
+    COLOR_INACTIVE = pg.Color('lightskyblue3')
+    COLOR_ACTIVE = pg.Color('dodgerblue2')
+    FONT = pg.font.Font(None, 32)
+    label_box1 = pg.Rect(0, win_height, 100, 40)
+    myfont = pg.font.SysFont("monospace", font_size)
+    label = myfont.render(f"pHit:", 1, (200, 200, 200))
+    SCREEN.blit(label, label_box1)
+    input_box1 = InputBox(45, win_height, 100, 20)
+    input_boxes = [input_box1]
     while True:
         drawgrid()
-        event = pygame.event.wait()
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                robot_col = (robot_col - 1) % grid_width
-                action = (-1, 0)
-            elif event.key == pygame.K_RIGHT:
-                robot_col = (robot_col + 1) % grid_width
-                action = (1, 0)
-            elif event.key == pygame.K_DOWN:
-                robot_row = (robot_row + 1) % grid_height
-                action = (0, 1)
-            elif event.key == pygame.K_UP:
-                robot_row = (robot_row - 1) % grid_height
-                action = (0, -1)
-            # apply motion
-            probs = motion_update(probs, action)
+        events = pg.event.get()
+        for event in events:
+            if event.type == pg.QUIT:
+                pg.quit()
+                sys.exit()
+            elif event.type == pg.KEYDOWN:
+                if event.key == pg.K_LEFT:
+                    robot_col = (robot_col - 1) % grid_width
+                    action = (-1, 0)
+                elif event.key == pg.K_RIGHT:
+                    robot_col = (robot_col + 1) % grid_width
+                    action = (1, 0)
+                elif event.key == pg.K_DOWN:
+                    robot_row = (robot_row + 1) % grid_height
+                    action = (0, 1)
+                elif event.key == pg.K_UP:
+                    robot_row = (robot_row - 1) % grid_height
+                    action = (0, -1)
+                else:
+                    action = False
+                if action:
+                    # apply motion
+                    probs = motion_update(probs, action)
+                    # sample measurement according to pHit and pMiss
+                    good_measurement = random.random() < pHit
+                    measurement = grid[robot_row][robot_col] if good_measurement else ('green' if grid[0][robot_col] == 'red' else 'red')
+                    print(f"measurement = {good_measurement}")
+                    # update probabilities given the color sensed
+                    probs = measurement_update(probs, measurement)
+            elif event.type == pg.MOUSEBUTTONDOWN:
+                print("oups")
+            for box in input_boxes:
+                box.handle_event(event)
 
-            # sample measurement according to pHit and pMiss
-            good_measurement = random.random() < pHit
-            measurement = grid[robot_row][robot_col] if good_measurement else ('green' if grid[0][robot_col] == 'red' else 'red')
-            print(f"measurement = {good_measurement}")
-            # update probabilities given the color sensed
-            probs = measurement_update(probs, measurement)
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            # If the user clicked on the input_box rect.
-            if input_box.collidepoint(event.pos):
-                # Toggle the active variable.
-                active = not active
-        pygame.display.update()
+            for box in input_boxes:
+                box.draw(SCREEN)
+
+        # display.flip() will update only a portion of the
+        # screen to updated, not full area
+        pg.display.flip()
 
 
 def drawgrid():
     global probs
-    robot = pygame.image.load('robotic.png')
-    robot = pygame.transform.smoothscale(robot, (robot_size, robot_size))
-    myfont = pygame.font.SysFont("monospace", font_size)
+    robot = pg.image.load('robotic.png')
+    robot = pg.transform.smoothscale(robot, (robot_size, robot_size))
+    myfont = pg.font.SysFont("monospace", font_size)
 
     for i, y in enumerate(range(0, win_height, cell_height)):
         for j, x in enumerate(range(0, win_width, cell_width)):
-            rect = pygame.Rect(x+outline_thickness, y+outline_thickness, cell_width-outline_thickness, cell_height-outline_thickness)
-            pygame.draw.rect(SCREEN, grid_colors[grid[i][j]], rect, 0)
+            rect = pg.Rect(x+outline_thickness, y+outline_thickness, cell_width-outline_thickness, cell_height-outline_thickness)
+            pg.draw.rect(SCREEN, grid_colors[grid[i][j]], rect, 0)
             label = myfont.render(f"p: {probs[i][j]}", 1, (0, 0, 0))
             SCREEN.blit(label, [x+(cell_width/4), y+int((3.5*cell_height/4))])
             if j == robot_col and i == robot_row:
                 SCREEN.blit(robot,  [x+cell_width/4, y+cell_height/4])
 
     histogram = probs2surface(probs)
-    histogram = pygame.transform.smoothscale(histogram, (win_width, win_height))
+    histogram = pg.transform.smoothscale(histogram, (win_width, win_height))
     SCREEN.blit(histogram, [win_width, 0])
 
 
@@ -142,7 +158,7 @@ def fig2img(fig):
 
 
 def pilImageToSurface(pilImage):
-    return pygame.image.fromstring(
+    return pg.image.fromstring(
         pilImage.tobytes(), pilImage.size, pilImage.mode).convert()
 
 
@@ -173,4 +189,47 @@ def probs2surface(probs):
     surface = fig2surface(fig)
     return surface
 
-main()
+class InputBox:
+    def __init__(self, x, y, w, h, text=''):
+        self.rect = pg.Rect(x, y, w, h)
+        self.color = (200, 200, 200)
+        self.text = text
+        self.font = pg.font.SysFont("monospace", font_size)
+        self.txt_surface = self.font.render(text, 1, (0, 0, 0))
+        self.active = False
+
+    def handle_event(self, event):
+        if event.type == pg.MOUSEBUTTONDOWN:
+            # If the user clicked on the input_box rect.
+            if self.rect.collidepoint(event.pos):
+                # Toggle the active variable.
+                self.active = not self.active
+            else:
+                self.active = False
+            # Change the current color of the input box.
+            self.color = COLOR_ACTIVE if self.active else COLOR_INACTIVE
+        if event.type == pg.KEYDOWN:
+            if self.active:
+                if event.key == pg.K_RETURN:
+                    print(self.text)
+                    self.text = ''
+                elif event.key == pg.K_BACKSPACE:
+                    self.text = self.text[:-1]
+                else:
+                    self.text += event.unicode
+                # Re-render the text.
+                self.txt_surface = self.font.render(self.text, True, self.color)
+
+    # def update(self):
+    #     # Resize the box if the text is too long.
+    #     width = max(200, self.txt_surface.get_width()+10)
+    #     self.rect.w = width
+
+    def draw(self, screen):
+        # Blit the text.
+        screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
+        # Blit the rect.
+        pg.draw.rect(screen, self.color, self.rect, 2)
+
+if __name__ == "__main__":
+    main()
