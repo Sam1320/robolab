@@ -9,11 +9,17 @@ black = (0, 0, 0)
 white = (200, 200, 200)
 red = (255, 150, 70)
 green = (128, 255, 128)
-grid_width = 4
-grid_height = 1
+grid_width = 5
+grid_height = 5
 #todo adapt scale to actual screensize
 scale = int((1/grid_width)*600)
 font_size = int(scale/10)
+font_size2 = 20
+
+pg.font.init()
+font1 = pg.font.SysFont("monospace", font_size)
+font2 = pg.font.SysFont("monospace", font_size2)
+
 win_height = grid_height*scale
 win_width = grid_width*scale
 grid = [[random.sample(['green', 'red'], 1)[0] for _ in range(grid_width)] for _ in range(grid_height)]
@@ -27,15 +33,23 @@ robot_row = 0 #random.randint(0, grid_height)
 robot_col = 0 #random.randint(0, grid_width)
 outline_thickness = 4
 n_blocks = grid_width*grid_height
-probs = [[1/n_blocks for _ in range(grid_width)] for _ in range(grid_height)]
-# probs = [[0 for _ in range(grid_width)] for _ in range(grid_height)]
-# probs[0][0] = 1.
+# probs = [[1/n_blocks for _ in range(grid_width)] for _ in range(grid_height)]
+probs = [[0 for _ in range(grid_width)] for _ in range(grid_height)]
+probs[0][0] = 1.
 pHit = .9
 pMiss = 0.1
 pGood = .8
-pOvershoot = 0.1
-pUndershoot = 0.1
-panel_height = 40
+pOvershoot = 1-(pGood/2)
+pUndershoot = 1-(pGood/2)
+
+
+input_width = font_size2*2
+input_height = font_size2*1.5
+label_width = font_size2*8
+label_height = font_size2*1.5
+
+panel_width = input_width+label_width
+
 
 measurement_probs = {'red|red': pHit, 'green|red':pMiss, 'green|green':pHit, 'red|green':pMiss}
 Z = ['red', 'red']
@@ -43,13 +57,18 @@ Z = ['red', 'red']
 def main():
     global SCREEN, CLOCK, robot_row, robot_col, probs
     pg.init()
-    SCREEN = pg.display.set_mode((win_width*2, win_height+panel_height))
+    SCREEN = pg.display.set_mode((panel_width+win_width*2, max(win_height, 300)))
     CLOCK = pg.time.Clock()
     SCREEN.fill(black)
     # used by InputBox
 
-    input_box1 = InputBox(45, win_height, 50, 15, screen=SCREEN, text='pHit')
-    input_boxes = [input_box1]
+    probabilities = ['pHit', 'pMiss', 'pGood', 'pOvershoot', 'pUndershoot']
+    input_boxes = [InputBox(0, label_height*i, screen=SCREEN, proba=proba) for i, proba in enumerate(probabilities)]
+    #todo: make text split into different lines
+    rect = pg.Rect(0, len(probabilities)*label_height, 10, win_height)
+    move_text = "to move use the arrow keys and use the m key for measurement updates."
+    blit_text(SCREEN, move_text, (0, len(probabilities)*label_height+10),width=panel_width, height=win_height, color=grid_colors['white'], font=font2)
+
     while True:
         drawgrid()
         events = pg.event.get()
@@ -75,6 +94,8 @@ def main():
                 if action:
                     # apply motion
                     probs = motion_update(probs, action)
+                if event.key == pg.K_m:
+                    print("wips")
                     # sample measurement according to pHit and pMiss
                     good_measurement = random.random() < pHit
                     measurement = grid[robot_row][robot_col] if good_measurement else ('green' if grid[0][robot_col] == 'red' else 'red')
@@ -88,8 +109,6 @@ def main():
                 for box in input_boxes:
                     if box.active:
                         box.handle_event(event)
-                        print('wii')
-
             for box in input_boxes:
                 box.draw()
 
@@ -97,25 +116,40 @@ def main():
         # screen to updated, not full area
         pg.display.flip()
 
+def blit_text(surface, text, pos, width, height, font, color):
+    words = [word.split(' ') for word in text.splitlines()]  # 2D array where each row is a list of words.
+    space = font.size(' ')[0]  # The width of a space.
+    max_width, max_height = width, height
+    x, y = pos
+    for line in words:
+        for word in line:
+            word_surface = font.render(word, 1, color)
+            word_width, word_height = word_surface.get_size()
+            if x + word_width >= max_width:
+                x = pos[0]  # Reset the x.
+                y += word_height  # Start on new row.
+            surface.blit(word_surface, (x, y))
+            x += word_width + space
+        x = pos[0]  # Reset the x.
+        y += word_height
 
 def drawgrid():
     global probs
     robot = pg.image.load('robotic.png')
     robot = pg.transform.smoothscale(robot, (robot_size, robot_size))
-    myfont = pg.font.SysFont("monospace", font_size)
 
     for i, y in enumerate(range(0, win_height, cell_height)):
-        for j, x in enumerate(range(0, win_width, cell_width)):
+        for j, x in enumerate(range(panel_width, win_width+panel_width, cell_width)):
             rect = pg.Rect(x+outline_thickness, y+outline_thickness, cell_width-outline_thickness, cell_height-outline_thickness)
             pg.draw.rect(SCREEN, grid_colors[grid[i][j]], rect, 0)
-            label = myfont.render(f"p: {probs[i][j]}", 1, (0, 0, 0))
+            label = font1.render(f"p: {probs[i][j]}", 1, (0, 0, 0))
             SCREEN.blit(label, [x+(cell_width/4), y+int((3.5*cell_height/4))])
             if j == robot_col and i == robot_row:
                 SCREEN.blit(robot,  [x+cell_width/4, y+cell_height/4])
 
     histogram = probs2surface(probs)
     histogram = pg.transform.smoothscale(histogram, (win_width, win_height))
-    SCREEN.blit(histogram, [win_width, 0])
+    SCREEN.blit(histogram, [win_width+panel_width+outline_thickness, outline_thickness])
 
 
 def measurement_update(p, measurement):
@@ -131,14 +165,17 @@ def measurement_update(p, measurement):
 
 
 def motion_update(p, action):
+    #todo: fix unbounded probs (>1) when multiple motions without measurement update
     new_p = [[0 for _ in range(len(p[0]))] for _ in range(len(p))]
     for i in range(len(p)):
         for j in range(len(p[0])):
             # apply law of total probability. i.e. sum over all possible transitions
-            t1 = pGood*p[(i-action[1])%grid_height][(j-action[0])%grid_width]                 # the robot moved correctly
-            t2 = pOvershoot * p[(i-action[1]-1)%grid_height][(j-action[0]-1)%grid_width]    # the robot moved one cell too much
-            t3 = pUndershoot * p[i][j]                         # the robot did not move
+            t1 = pGood*p[(i-action[1])%grid_height][(j-action[0])%grid_width]               # the robot moved correctly
+            t2 = pOvershoot * p[(i-2*action[1])%grid_height][(j-2*action[0]) % grid_width]    # the robot moved too much
+            t3 = pUndershoot * p[i][j]                                                      # the robot did not move
             new_p[i][j] = round(t1 + t2 + t3, 4)
+    total_sum = sum([sum(row) for row in new_p]) + 1e-10
+    new_p = [[round(p/total_sum, 4) for p in row] for row in new_p]
     return new_p
 
 # libraries
@@ -188,23 +225,40 @@ def probs2surface(probs):
     return surface
 
 class InputBox:
-    def __init__(self, x, y, w, h, screen, text=''):
-        self.rect = pg.Rect(x, y, w, h)
+    def __init__(self, x, y, screen, proba=''):
+        global pHit, pOvershoot, pUndershoot, pMiss, pGood
+
+        self.rect = pg.Rect(x+label_width, y, input_width, input_height)
         self.color = (200, 200, 200)
         self.color_active = pg.Color('dodgerblue2')
         self.color_inactive = grid_colors['white']
         self.text = ''
-        self.font = pg.font.SysFont("monospace", font_size)
-        self.txt_surface = self.font.render('', 1, (0, 0, 0))
+        self.proba = proba
+        self.font = font2
+        match self.proba:
+            case 'pHit':
+                p = pHit
+            case 'pMiss':
+                p = pMiss
+            case 'pOvershoot':
+                p = pOvershoot
+            case 'pUndershoot':
+                p = pUndershoot
+            case 'pGood':
+                p = pGood
+
+        self.txt_surface = self.font.render(str(p), 1, grid_colors['white'])
         self.active = False
         self.screen = screen
 
-        label_box1 = pg.Rect(0, win_height, 100, 40)
-        label = self.font.render(f"{text}:", 1, grid_colors['white'])
+        label_box1 = pg.Rect(x+2, y, label_width, label_height)
+        label = self.font.render(f"{proba}:          ", 1, grid_colors['white'])
         self.screen.blit(label, label_box1)
+        # self.screen.blit(self.txt_surface, (self.rect.x+2, self.rect.y))
+
 
     def handle_event(self, event):
-        global pHit
+        global pHit, pOvershoot, pUndershoot, pMiss, pGood
         if event.type == pg.MOUSEBUTTONDOWN:
             # If the user clicked on the input_box rect.
             if self.rect.collidepoint(event.pos):
@@ -217,7 +271,19 @@ class InputBox:
         if event.type == pg.KEYDOWN:
             if self.active:
                 if event.key == pg.K_RETURN:
-                    pHit = float(self.text)
+                    match self.proba:
+                        case 'pHit':
+                            pHit = float(self.text)
+                        case 'pMiss':
+                            pMiss = float(self.text)
+                        case 'pOvershoot':
+                            pOvershoot = float(self.text)
+                        case 'pUndershoot':
+                            pUndershoot = float(self.text)
+                        case 'pGood':
+                            pGood = float(self.text)
+                            pOvershoot = (1 - pGood) / 2
+                            pUndershoot = (1 - pGood) / 2
                     self.active = False
                     self.color = self.color_inactive
                 elif event.key == pg.K_BACKSPACE:
@@ -241,7 +307,7 @@ class InputBox:
         # Blit the text.
         self.screen.blit(self.txt_surface, (self.rect.x+2, self.rect.y))
         # Blit the rect.
-        pg.draw.rect(self.screen, self.color, self.rect, 2)
+        pg.draw.rect(self.screen, self.color, self.rect, 1)
 
 if __name__ == "__main__":
     main()
