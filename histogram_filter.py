@@ -18,7 +18,7 @@ win_height = grid_height*scale
 win_width = grid_width*scale
 grid = [[random.sample(['green', 'red'], 1)[0] for _ in range(grid_width)] for _ in range(grid_height)]
 # grid = ['green', 'red', 'red', 'green', 'green']
-grid_colors = {'green': green, 'red': red}
+grid_colors = {'green': green, 'red': red, 'white': white, 'black': black}
 cell_height = int(win_height/grid_height)
 cell_width = int(win_width/grid_width)
 robot_size = int(cell_height*0.5)
@@ -41,20 +41,14 @@ measurement_probs = {'red|red': pHit, 'green|red':pMiss, 'green|green':pHit, 're
 Z = ['red', 'red']
 
 def main():
-    global SCREEN, CLOCK, robot_row, robot_col, probs, COLOR_INACTIVE, COLOR_ACTIVE, FONT
+    global SCREEN, CLOCK, robot_row, robot_col, probs
     pg.init()
     SCREEN = pg.display.set_mode((win_width*2, win_height+panel_height))
     CLOCK = pg.time.Clock()
     SCREEN.fill(black)
     # used by InputBox
-    COLOR_INACTIVE = pg.Color('lightskyblue3')
-    COLOR_ACTIVE = pg.Color('dodgerblue2')
-    FONT = pg.font.Font(None, 32)
-    label_box1 = pg.Rect(0, win_height, 100, 40)
-    myfont = pg.font.SysFont("monospace", font_size)
-    label = myfont.render(f"pHit:", 1, (200, 200, 200))
-    SCREEN.blit(label, label_box1)
-    input_box1 = InputBox(45, win_height, 100, 20)
+
+    input_box1 = InputBox(45, win_height, 50, 15, screen=SCREEN, text='pHit')
     input_boxes = [input_box1]
     while True:
         drawgrid()
@@ -63,7 +57,7 @@ def main():
             if event.type == pg.QUIT:
                 pg.quit()
                 sys.exit()
-            elif event.type == pg.KEYDOWN:
+            if event.type == pg.KEYDOWN:
                 if event.key == pg.K_LEFT:
                     robot_col = (robot_col - 1) % grid_width
                     action = (-1, 0)
@@ -87,13 +81,17 @@ def main():
                     print(f"measurement = {good_measurement}")
                     # update probabilities given the color sensed
                     probs = measurement_update(probs, measurement)
-            elif event.type == pg.MOUSEBUTTONDOWN:
-                print("oups")
-            for box in input_boxes:
-                box.handle_event(event)
+            if event.type == pg.MOUSEBUTTONDOWN:
+                for box in input_boxes:
+                    box.handle_event(event)
+            elif event.type == pg.KEYDOWN:
+                for box in input_boxes:
+                    if box.active:
+                        box.handle_event(event)
+                        print('wii')
 
             for box in input_boxes:
-                box.draw(SCREEN)
+                box.draw()
 
         # display.flip() will update only a portion of the
         # screen to updated, not full area
@@ -190,15 +188,23 @@ def probs2surface(probs):
     return surface
 
 class InputBox:
-    def __init__(self, x, y, w, h, text=''):
+    def __init__(self, x, y, w, h, screen, text=''):
         self.rect = pg.Rect(x, y, w, h)
         self.color = (200, 200, 200)
-        self.text = text
+        self.color_active = pg.Color('dodgerblue2')
+        self.color_inactive = grid_colors['white']
+        self.text = ''
         self.font = pg.font.SysFont("monospace", font_size)
-        self.txt_surface = self.font.render(text, 1, (0, 0, 0))
+        self.txt_surface = self.font.render('', 1, (0, 0, 0))
         self.active = False
+        self.screen = screen
+
+        label_box1 = pg.Rect(0, win_height, 100, 40)
+        label = self.font.render(f"{text}:", 1, grid_colors['white'])
+        self.screen.blit(label, label_box1)
 
     def handle_event(self, event):
+        global pHit
         if event.type == pg.MOUSEBUTTONDOWN:
             # If the user clicked on the input_box rect.
             if self.rect.collidepoint(event.pos):
@@ -207,29 +213,35 @@ class InputBox:
             else:
                 self.active = False
             # Change the current color of the input box.
-            self.color = COLOR_ACTIVE if self.active else COLOR_INACTIVE
+            self.color = self.color_active if self.active else self.color_inactive
         if event.type == pg.KEYDOWN:
             if self.active:
                 if event.key == pg.K_RETURN:
-                    print(self.text)
-                    self.text = ''
+                    pHit = float(self.text)
+                    self.active = False
+                    self.color = self.color_inactive
                 elif event.key == pg.K_BACKSPACE:
                     self.text = self.text[:-1]
                 else:
                     self.text += event.unicode
+
+                # delete old render before rerendering to avoid text overlap
+                pg.draw.rect(self.screen, grid_colors['black'], self.rect, 0)
                 # Re-render the text.
-                self.txt_surface = self.font.render(self.text, True, self.color)
+                self.txt_surface = self.font.render(self.text, True, grid_colors['white'])
 
     # def update(self):
     #     # Resize the box if the text is too long.
     #     width = max(200, self.txt_surface.get_width()+10)
     #     self.rect.w = width
 
-    def draw(self, screen):
+    def draw(self):
+        # delete old render before rerendering to avoid text overlap
+        pg.draw.rect(self.screen, grid_colors['black'], self.rect, 0)
         # Blit the text.
-        screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
+        self.screen.blit(self.txt_surface, (self.rect.x+2, self.rect.y))
         # Blit the rect.
-        pg.draw.rect(screen, self.color, self.rect, 2)
+        pg.draw.rect(self.screen, self.color, self.rect, 2)
 
 if __name__ == "__main__":
     main()
