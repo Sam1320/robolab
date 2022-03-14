@@ -4,13 +4,14 @@ import random
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
+from utils import *
 
 black = (0, 0, 0)
 white = (200, 200, 200)
 red = (255, 150, 70)
 green = (128, 255, 128)
-grid_width = 5
-grid_height = 5
+grid_width = 8
+grid_height = 8
 #todo adapt scale to actual screensize
 scale = int((1/grid_width)*600)
 font_size = int(scale/10)
@@ -25,22 +26,22 @@ win_width = grid_width*scale
 grid = [[random.sample(['green', 'red'], 1)[0] for _ in range(grid_width)] for _ in range(grid_height)]
 # grid = ['green', 'red', 'red', 'green', 'green']
 grid_colors = {'green': green, 'red': red, 'white': white, 'black': black}
-cell_height = int(win_height/grid_height)
-cell_width = int(win_width/grid_width)
+cell_height = scale
+cell_width = scale
 robot_size = int(cell_height*0.5)
 
-robot_row = 0 #random.randint(0, grid_height)
-robot_col = 0 #random.randint(0, grid_width)
+robot_row = random.randint(0, grid_height-1)
+robot_col = random.randint(0, grid_width-1)
 outline_thickness = 4
 n_blocks = grid_width*grid_height
-# probs = [[1/n_blocks for _ in range(grid_width)] for _ in range(grid_height)]
-probs = [[0 for _ in range(grid_width)] for _ in range(grid_height)]
-probs[0][0] = 1.
+probs = [[1/n_blocks for _ in range(grid_width)] for _ in range(grid_height)]
+# probs = [[0 for _ in range(grid_width)] for _ in range(grid_height)]
+# probs[0][0] = 1.
 pHit = .9
 pMiss = 0.1
 pGood = .8
-pOvershoot = 1-(pGood/2)
-pUndershoot = 1-(pGood/2)
+pOvershoot = (1-pGood)/2
+pUndershoot = (1-pGood)/2
 
 
 input_width = font_size2*2
@@ -54,19 +55,18 @@ panel_width = input_width+label_width
 measurement_probs = {'red|red': pHit, 'green|red':pMiss, 'green|green':pHit, 'red|green':pMiss}
 Z = ['red', 'red']
 
+#todo: allow for light or dark theme selection
 def main():
     global SCREEN, CLOCK, robot_row, robot_col, probs
     pg.init()
     SCREEN = pg.display.set_mode((panel_width+win_width*2, max(win_height, 300)))
     CLOCK = pg.time.Clock()
-    SCREEN.fill(black)
+    SCREEN.fill('black')
     # used by InputBox
 
     probabilities = ['pHit', 'pMiss', 'pGood', 'pOvershoot', 'pUndershoot']
     input_boxes = [InputBox(0, label_height*i, screen=SCREEN, proba=proba) for i, proba in enumerate(probabilities)]
-    #todo: make text split into different lines
-    rect = pg.Rect(0, len(probabilities)*label_height, 10, win_height)
-    move_text = "to move use the arrow keys and use the m key for measurement updates."
+    move_text = "For motion updates use the arrow keys and use the m key for measurement updates."
     blit_text(SCREEN, move_text, (0, len(probabilities)*label_height+10),width=panel_width, height=win_height, color=grid_colors['white'], font=font2)
 
     while True:
@@ -95,7 +95,6 @@ def main():
                     # apply motion
                     probs = motion_update(probs, action)
                 if event.key == pg.K_m:
-                    print("wips")
                     # sample measurement according to pHit and pMiss
                     good_measurement = random.random() < pHit
                     measurement = grid[robot_row][robot_col] if good_measurement else ('green' if grid[0][robot_col] == 'red' else 'red')
@@ -116,22 +115,6 @@ def main():
         # screen to updated, not full area
         pg.display.flip()
 
-def blit_text(surface, text, pos, width, height, font, color):
-    words = [word.split(' ') for word in text.splitlines()]  # 2D array where each row is a list of words.
-    space = font.size(' ')[0]  # The width of a space.
-    max_width, max_height = width, height
-    x, y = pos
-    for line in words:
-        for word in line:
-            word_surface = font.render(word, 1, color)
-            word_width, word_height = word_surface.get_size()
-            if x + word_width >= max_width:
-                x = pos[0]  # Reset the x.
-                y += word_height  # Start on new row.
-            surface.blit(word_surface, (x, y))
-            x += word_width + space
-        x = pos[0]  # Reset the x.
-        y += word_height
 
 def drawgrid():
     global probs
@@ -157,6 +140,7 @@ def measurement_update(p, measurement):
     for i in range(len(p)):
         for j in range(len(p[0])):
             hit = measurement == grid[i][j]
+            # apply bayes rule
             new_p[i][j] = p[i][j]*(hit*pHit + (1-hit)*pMiss)
     # normalize
     total_sum = sum([sum(row) for row in new_p]) + 1e-10
@@ -165,7 +149,6 @@ def measurement_update(p, measurement):
 
 
 def motion_update(p, action):
-    #todo: fix unbounded probs (>1) when multiple motions without measurement update
     new_p = [[0 for _ in range(len(p[0]))] for _ in range(len(p))]
     for i in range(len(p)):
         for j in range(len(p[0])):
@@ -177,30 +160,6 @@ def motion_update(p, action):
     total_sum = sum([sum(row) for row in new_p]) + 1e-10
     new_p = [[round(p/total_sum, 4) for p in row] for row in new_p]
     return new_p
-
-# libraries
-
-
-
-def fig2img(fig):
-    """Convert a Matplotlib figure to a PIL Image and return it"""
-    import io
-    buf = io.BytesIO()
-    fig.savefig(buf)
-    buf.seek(0)
-    img = Image.open(buf)
-    return img
-
-
-def pilImageToSurface(pilImage):
-    return pg.image.fromstring(
-        pilImage.tobytes(), pilImage.size, pilImage.mode).convert()
-
-
-def fig2surface(fig):
-    img = fig2img(fig)
-    surface = pilImageToSurface(img)
-    return surface
 
 
 def probs2surface(probs):
@@ -224,10 +183,10 @@ def probs2surface(probs):
     surface = fig2surface(fig)
     return surface
 
+
 class InputBox:
     def __init__(self, x, y, screen, proba=''):
         global pHit, pOvershoot, pUndershoot, pMiss, pGood
-
         self.rect = pg.Rect(x+label_width, y, input_width, input_height)
         self.color = (200, 200, 200)
         self.color_active = pg.Color('dodgerblue2')
@@ -235,6 +194,8 @@ class InputBox:
         self.text = ''
         self.proba = proba
         self.font = font2
+        self.txt_surface = self.font.render('', 1, grid_colors['white'])
+
         match self.proba:
             case 'pHit':
                 p = pHit
@@ -246,16 +207,14 @@ class InputBox:
                 p = pUndershoot
             case 'pGood':
                 p = pGood
+        self.txt_surface = self.font.render(str(round(p, 4)), 1, grid_colors['white'])
 
-        self.txt_surface = self.font.render(str(p), 1, grid_colors['white'])
         self.active = False
         self.screen = screen
 
         label_box1 = pg.Rect(x+2, y, label_width, label_height)
         label = self.font.render(f"{proba}:          ", 1, grid_colors['white'])
         self.screen.blit(label, label_box1)
-        # self.screen.blit(self.txt_surface, (self.rect.x+2, self.rect.y))
-
 
     def handle_event(self, event):
         global pHit, pOvershoot, pUndershoot, pMiss, pGood
@@ -281,6 +240,7 @@ class InputBox:
                         case 'pUndershoot':
                             pUndershoot = float(self.text)
                         case 'pGood':
+                            #todo: update other boxes labels when probabilities changes
                             pGood = float(self.text)
                             pOvershoot = (1 - pGood) / 2
                             pUndershoot = (1 - pGood) / 2
@@ -291,15 +251,8 @@ class InputBox:
                 else:
                     self.text += event.unicode
 
-                # delete old render before rerendering to avoid text overlap
-                pg.draw.rect(self.screen, grid_colors['black'], self.rect, 0)
                 # Re-render the text.
                 self.txt_surface = self.font.render(self.text, True, grid_colors['white'])
-
-    # def update(self):
-    #     # Resize the box if the text is too long.
-    #     width = max(200, self.txt_surface.get_width()+10)
-    #     self.rect.w = width
 
     def draw(self):
         # delete old render before rerendering to avoid text overlap
@@ -308,6 +261,7 @@ class InputBox:
         self.screen.blit(self.txt_surface, (self.rect.x+2, self.rect.y))
         # Blit the rect.
         pg.draw.rect(self.screen, self.color, self.rect, 1)
+
 
 if __name__ == "__main__":
     main()
