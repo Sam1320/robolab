@@ -38,10 +38,10 @@ constant_shift = 0.5
 step_size = 10
 
 win_height = cell_width+plot_height
-
+plot_color = 'blue'
 
 def main():
-    global screen, robot_x, mu, sigma_init
+    global screen, robot_x, mu, sigma_init, plot_color
     pg.init()
     screen = pg.display.set_mode((panel_width+win_width, cell_width+plot_height))
     screen.fill('black')
@@ -69,11 +69,13 @@ def main():
                     true_move = np.random.normal(action, motion_sigma, 1)[0]
                     robot_x = (robot_x + true_move)
                     # bound movements to grid limits
+                    plot_color = 'red'
                     robot_x = max(min(win_width-1+panel_width, robot_x), 0+panel_width)
                 if event.key == pg.K_m:
                     measurement = np.random.normal(robot_x, measurement_sigma, 1)[0]
                     print(f'z = {measurement} truth = {robot_x}')
                     mu, sigma_init = measurement_update(mu, sigma_init, measurement, measurement_sigma)
+                    plot_color = 'blue'
             if event.type == pg.MOUSEBUTTONDOWN:
                 for box in input_boxes:
                     box.handle_event(event)
@@ -129,12 +131,14 @@ def gauss2surface(mu, sigma):
     ax.set_axis_off()
     plt.xlim(0, win_width)
     plt.ylim(0, 0.1)
-    plt.plot(x, gaussian(x, mu-panel_width, sigma), color='blue')
+    plt.plot(x, gaussian(x, mu-panel_width, sigma), color=plot_color)
 
     surface = utils.fig2surface(fig)
     return surface
 
+
 class InputBox:
+    #todo: fix numbers displayed outside of input box
     def __init__(self, x, y, screen, name=''):
         global sigma_init, motion_sigma, measurement_sigma, step_size
         self.rect = pg.Rect(x+label_width, y, input_width, input_height)
