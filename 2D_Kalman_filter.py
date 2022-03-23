@@ -20,10 +20,11 @@ def get_dpi():
 dpi =  get_dpi()
 
 class Robot:
-    def __init__(self, true_position, position_uncertainty, motion_uncertainty, size):
+    def __init__(self, true_position, position_uncertainty, motion_uncertainty, measurement_uncertainty, size):
         self.pos = true_position
         self.mu = list(true_position)
         self.sigma = position_uncertainty
+        self.measurement_sigma = measurement_uncertainty
         self.motion_sigma = motion_uncertainty
         self.size = size
         # self.world_size = world_size
@@ -40,7 +41,11 @@ class Robot:
             self.pos[1] += np.random.normal(motion[1], self.motion_sigma, 1)[0]
 
     def measure(self):
-        pass
+        measurement = np.random.multivariate_normal(self.pos, self.measurement_sigma, 1)[0]
+        self.mu[0] = (self.mu[0]*(self.measurement_sigma[0][0]**2) + measurement[0]*self.sigma[0][0]**2)/ (self.sigma[0][0]**2+self.measurement_sigma[0][0]**2)
+        self.mu[1] = (self.mu[1]*(self.measurement_sigma[1][1]**2) + measurement[1]*self.sigma[1][1]**2)/ (self.sigma[1][1]**2+self.measurement_sigma[1][1]**2)
+        self.sigma[0][0] = np.sqrt(1/(1/self.sigma[0][0]**2 + 1/self.measurement_sigma[0][0]**2))
+        self.sigma[1][1] = np.sqrt(1/(1/self.sigma[1][1]**2 + 1/self.measurement_sigma[0][0]**2))
 
     def bound_position(self, position):
         #todo: bound movements to grid limits
@@ -73,10 +78,11 @@ class Kalman_2D:
         robot_y = 50 # random.randint(0, self.world_size)
         mu = [robot_x, robot_y]
         # start with big uncertainty
-        # sigma = [[(self.screen_width+self.panel_width)*40, 2.], [2., self.screen_height*40]]
-        sigma = [[10, 0], [0, 10]]
+        sigma = [[self.world_size[0], 0], [0, self.world_size[1]]]
+        # sigma = [[10, 0], [0, 10]]
         motion_sigma = 5.
-        self.robot = Robot(mu, sigma, motion_uncertainty=motion_sigma, size=self.robot_size)
+        measurement_sigma = [[5., 0], [0., 5.]]
+        self.robot = Robot(mu, sigma, motion_uncertainty=motion_sigma, measurement_uncertainty=measurement_sigma, size=self.robot_size)
         self.outline = 2
 
     def start(self):
@@ -102,8 +108,8 @@ class Kalman_2D:
                     else:
                         motion = False
                     if motion:
+                        print(motion)
                         self.robot.move(motion)
-
                         # print(f'sigmax= {self.robot.sigma[0][0]} sigmay={self.robot.sigma[1][1]}')
                     if event.key == pg.K_m:
                         self.robot.measure()
@@ -146,7 +152,7 @@ class Kalman_2D:
         # levels = [0.0000005, 0.000001, 0.00001, 0.0001, 0.0002, 0.00025]
         cs = ax.contourf(x, y, z, levels=5, cmap='coolwarm')
         # ax.set_xscale('log')
-        ax.contour(cs, colors='k')
+        # ax.contour(cs, colors='k')
 
         # Major ticks every 20, minor ticks every 5
         x_ticks = np.arange(0, self.world_size[0], self.world_size[0]/20)
@@ -161,25 +167,14 @@ class Kalman_2D:
 
 
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-# Data to plot.
-# x, y = np.meshgrid(np.arange(7), np.arange(10))
-# z = np.sin(0.5 * x) * np.cos(0.52 * y)
+# import matplotlib.pyplot as plt
+# import numpy as np
 #
 # x, y = np.mgrid[-10:10:.1, -10:10:.1]
-# rv = multivariate_normal([0, 0], [[2.0, 2.], [2., 2.5]])
+# rv = multivariate_normal([0, 0], [[10.0, 2.], [2., 10.0]])
 # pos = np.dstack((x, y))
 # z = rv.pdf(pos)
-# fig = plt.gcf()
-# ax = fig.add_axes([0, 0, 1, 1])
-# # ax.set_axis_off()
-# cs = ax.contourf(x, y, z, levels=4, cmap='coolwarm')
-# ax.contour(cs, colors='k')
-
-# print(get_dpi())
-
+# plt.contourf(x, y, z, cmap='coolwarm')
 # plt.show()
 kf = Kalman_2D()
 kf.start()
