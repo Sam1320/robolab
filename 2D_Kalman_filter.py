@@ -22,7 +22,7 @@ dpi =  get_dpi()
 class Robot:
     def __init__(self, true_position, position_uncertainty, motion_uncertainty, size):
         self.pos = true_position
-        self.mu = true_position
+        self.mu = list(true_position)
         self.sigma = position_uncertainty
         self.motion_sigma = motion_uncertainty
         self.size = size
@@ -34,6 +34,7 @@ class Robot:
             self.mu[0] += motion[0]
             self.sigma[0][0] = np.sqrt(self.sigma[0][0]**2 + self.motion_sigma**2)
             self.pos[0] += np.random.normal(motion[0], self.motion_sigma, 1)[0]
+            print(f'motion command = {motion[0]}')
         elif motion[1]:
             self.mu[1] += motion[1]
             self.sigma[1][1] = np.sqrt(self.sigma[1][1]**2 + self.motion_sigma**2)
@@ -48,12 +49,14 @@ class Robot:
 class Kalman_2D:
     def __init__(self, screen_width=1500, font_size=0):
         self.screen_width = screen_width
-        self.screen_height = screen_width//2
+        self.height_width_ratio = 2/3
+        self.screen_height = int(screen_width*self.height_width_ratio)
         input_width = font_size * 2
         input_height = font_size * 1.5
         label_width = font_size * 8
         label_height = font_size * 1.5
         self.dpi = dpi
+        self.world_size = (100, int(100*self.height_width_ratio))
         self.robot_size = self.screen_width//30
         self.step_size = 10
         self.panel_width = input_width + label_width
@@ -65,13 +68,13 @@ class Kalman_2D:
         self.figsize = (int(self.plot_width/self.dpi), int(self.plot_height/self.dpi))
         self.font_size = font_size
         self.screen = pg.display.set_mode((self.screen_width, self.screen_height))
-        robot_x = random.randint(self.robot_size, self.screen_width-self.robot_size)
-        robot_y = random.randint(self.robot_size, self.screen_height-self.robot_size)
+        robot_x = 50 # random.randint(0, self.world_size)
+        robot_y = 50 # random.randint(0, self.world_size)
         mu = [robot_x, robot_y]
         # start with big uncertainty
         # sigma = [[(self.screen_width+self.panel_width)*40, 2.], [2., self.screen_height*40]]
-        sigma = [[100, 0], [0, 100]]
-        motion_sigma = 20.
+        sigma = [[10, 0], [0, 10]]
+        motion_sigma = 10.
         self.robot = Robot(mu, sigma, motion_uncertainty=motion_sigma, size=self.robot_size)
         self.outline = 2
 
@@ -95,42 +98,44 @@ class Kalman_2D:
                         motion = False
                     if motion:
                         self.robot.move(motion)
-                        print(f'sigmax= {self.robot.sigma[0][0]} sigmay={self.robot.sigma[1][1]}')
+
+                        # print(f'sigmax= {self.robot.sigma[0][0]} sigmay={self.robot.sigma[1][1]}')
                     if event.key == pg.K_m:
                         self.robot.measure()
             pg.display.flip()
 
     def drawgrid(self):
-
         rect = pg.Rect(self.panel_width, 0, self.screen_width, self.screen_height)
         pg.draw.rect(self.screen, (200, 200, 200), rect, 0)
 
-        gauss = self.gauss2surface(self.robot.pos, self.robot.sigma)
+        gauss = self.gauss2surface(self.robot.mu, self.robot.sigma)
         gauss = pg.transform.smoothscale(gauss, (self.plot_width, self.plot_height))
         self.screen.blit(gauss, (self.panel_width, 0))
-        self.screen.blit(self.robot_img, [(self.panel_width+self.robot.pos[0])-self.robot.size//2, self.robot.pos[1]-(self.robot.size//2)])
+        # self.screen.blit(self.robot_img, [(self.panel_width+self.robot.pos[0])-self.robot.size//2, self.robot.pos[1]-(self.robot.size//2)])
 
         plt.close()
 
     def gauss2surface(self, mu, sigma):
-        scale = 100
-        x, y = np.mgrid[0:self.screen_width//scale:1, self.screen_height//scale:0:-1]
+        # print(f'mu= {mu}')
+        x, y = np.mgrid[0:self.world_size[0]:0.5, self.world_size[1]:0:-0.5]
         pos = np.dstack((x, y))
-        rv = multivariate_normal(np.array(mu)/scale, np.array(sigma)/scale)
+        rv = multivariate_normal(mu, sigma)
         z = rv.pdf(pos)
         plt.figure(figsize=self.figsize)
         fig = plt.gcf()
+        ax = fig.gca()
         ax = fig.add_axes([0, 0, 1, 1])
         ax.invert_yaxis()
         # ax.set_axis_off()
         # levels = [0.0000005, 0.000001, 0.00001, 0.0001, 0.0002, 0.00025]
         cs = ax.contourf(x, y, z, levels=5, cmap='coolwarm')
+        # ax.set_xscale('log')
         ax.contour(cs, colors='k')
 
         # Major ticks every 20, minor ticks every 5
-        x_ticks = np.arange(0, self.screen_width//scale, (self.screen_width//scale)/20)
-        y_ticks = np.arange(0, self.screen_height//scale, (self.screen_height//scale)/20)
-
+        x_ticks = np.arange(0, self.world_size[0], self.world_size[0]/20)
+        y_ticks = np.arange(0, self.world_size[1], self.world_size[1]/20)
+        #
         ax.set_xticks(x_ticks)
         ax.set_yticks(y_ticks)
 
