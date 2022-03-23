@@ -34,12 +34,13 @@ class Robot:
             self.mu[0] += motion[0]
             self.sigma[0][0] = np.sqrt(self.sigma[0][0]**2 + self.motion_sigma**2)
             self.pos[0] += np.random.normal(motion[0], self.motion_sigma, 1)[0]
-            print(f'motion command = {motion[0]}')
         elif motion[1]:
             self.mu[1] += motion[1]
             self.sigma[1][1] = np.sqrt(self.sigma[1][1]**2 + self.motion_sigma**2)
             self.pos[1] += np.random.normal(motion[1], self.motion_sigma, 1)[0]
 
+    def measure(self):
+        pass
 
     def bound_position(self, position):
         #todo: bound movements to grid limits
@@ -74,7 +75,7 @@ class Kalman_2D:
         # start with big uncertainty
         # sigma = [[(self.screen_width+self.panel_width)*40, 2.], [2., self.screen_height*40]]
         sigma = [[10, 0], [0, 10]]
-        motion_sigma = 10.
+        motion_sigma = 5.
         self.robot = Robot(mu, sigma, motion_uncertainty=motion_sigma, size=self.robot_size)
         self.outline = 2
 
@@ -94,6 +95,10 @@ class Kalman_2D:
                         motion = (-1 * self.step_size, 0)
                     elif event.key == pg.K_RIGHT:
                         motion = (1 * self.step_size, 0)
+                    elif event.key == pg.K_DOWN:
+                        motion = (0, 1 * self.step_size)
+                    elif event.key == pg.K_UP:
+                        motion = (0, -1 * self.step_size)
                     else:
                         motion = False
                     if motion:
@@ -111,9 +116,20 @@ class Kalman_2D:
         gauss = self.gauss2surface(self.robot.mu, self.robot.sigma)
         gauss = pg.transform.smoothscale(gauss, (self.plot_width, self.plot_height))
         self.screen.blit(gauss, (self.panel_width, 0))
-        # self.screen.blit(self.robot_img, [(self.panel_width+self.robot.pos[0])-self.robot.size//2, self.robot.pos[1]-(self.robot.size//2)])
+        robotx, roboty = self.world2screen(self.robot.pos)
+        self.screen.blit(self.robot_img, [(robotx)-self.robot.size//2, roboty-(self.robot.size//2)])
 
         plt.close()
+
+    def world2screen(self, pos):
+        x, y = pos[0], pos[1]
+        x_norm = x/self.world_size[0]
+        y_norm = y/self.world_size[1]
+        new_y = self.screen_height*y_norm
+        new_x = self.screen_width*x_norm
+        new_x += self.panel_width
+        return new_x, new_y
+
 
     def gauss2surface(self, mu, sigma):
         # print(f'mu= {mu}')
