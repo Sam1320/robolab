@@ -34,6 +34,7 @@ class Robot:
         if motion[0]:
             self.mu[0] += motion[0]
             self.sigma[0][0] = np.sqrt(self.sigma[0][0]**2 + self.motion_sigma**2)
+            #todo: noise for actual movement should be lower(?)
             self.pos[0] += np.random.normal(motion[0], self.motion_sigma, 1)[0]
         elif motion[1]:
             self.mu[1] += motion[1]
@@ -46,10 +47,6 @@ class Robot:
         self.mu[1] = (self.mu[1]*(self.measurement_sigma[1][1]**2) + measurement[1]*self.sigma[1][1]**2)/ (self.sigma[1][1]**2+self.measurement_sigma[1][1]**2)
         self.sigma[0][0] = np.sqrt(1/(1/self.sigma[0][0]**2 + 1/self.measurement_sigma[0][0]**2))
         self.sigma[1][1] = np.sqrt(1/(1/self.sigma[1][1]**2 + 1/self.measurement_sigma[0][0]**2))
-
-    def bound_position(self, position):
-        #todo: bound movements to grid limits
-        return position
 
 
 class Kalman_2D:
@@ -64,7 +61,7 @@ class Kalman_2D:
         self.dpi = dpi
         self.world_size = (100, int(100*self.height_width_ratio))
         self.robot_size = self.screen_width//30
-        self.step_size = 10
+        self.step_size = 5
         self.panel_width = input_width + label_width
         self.cell_width = self.robot_size*1.2
         self.robot_img = pg.transform.smoothscale(pg.image.load('robot2.png'), (self.robot_size, self.robot_size))
@@ -74,21 +71,26 @@ class Kalman_2D:
         self.figsize = (int(self.plot_width/self.dpi), int(self.plot_height/self.dpi))
         self.font_size = font_size
         self.screen = pg.display.set_mode((self.screen_width, self.screen_height))
-        robot_x = 50 # random.randint(0, self.world_size)
-        robot_y = 50 # random.randint(0, self.world_size)
+        robot_x = 50 #random.randint(10, self.world_size[0]-10)
+        robot_y = 50 #random.randint(10, self.world_size[0]-10)
         mu = [robot_x, robot_y]
         # start with big uncertainty
-        sigma = [[self.world_size[0], 0], [0, self.world_size[1]]]
-        # sigma = [[10, 0], [0, 10]]
-        motion_sigma = 5.
-        measurement_sigma = [[5., 0], [0., 5.]]
+        sigma = [[self.world_size[0]*10, 0], [0, self.world_size[1]*10]]
+
+        motion_sigma = 1.
+        measurement_sigma = [[2., 0], [0., 2.]]
         self.robot = Robot(mu, sigma, motion_uncertainty=motion_sigma, measurement_uncertainty=measurement_sigma, size=self.robot_size)
         self.outline = 2
+
+        # Parameters for plottig the gaussian. This only needs to be calculated once.
+        self.x_mesh, self.y_mesh = np.mgrid[0:self.world_size[0]:0.5, self.world_size[1]:0:-0.5]
+        self.mesh_coords = np.dstack((self.x_mesh, self.y_mesh))
+        self.x_ticks = np.arange(0, self.world_size[0], self.world_size[0]/20)
+        self.y_ticks = np.arange(1, self.world_size[1], self.world_size[1]/20)
 
     def start(self):
         pg.init()
         self.screen.fill('black')
-
         while True:
             self.drawgrid()
             events = pg.event.get()
@@ -108,9 +110,9 @@ class Kalman_2D:
                     else:
                         motion = False
                     if motion:
-                        print(motion)
-                        self.robot.move(motion)
-                        # print(f'sigmax= {self.robot.sigma[0][0]} sigmay={self.robot.sigma[1][1]}')
+                        # bound motion to the limits of the world
+                        if 0 < motion[0]+self.robot.pos[0] < self.world_size[0] and 0 < motion[1] + self.robot.pos[1] < self.world_size[1]:
+                            self.robot.move(motion)
                     if event.key == pg.K_m:
                         self.robot.measure()
             pg.display.flip()
@@ -136,45 +138,25 @@ class Kalman_2D:
         new_x += self.panel_width
         return new_x, new_y
 
-
     def gauss2surface(self, mu, sigma):
-        # print(f'mu= {mu}')
-        x, y = np.mgrid[0:self.world_size[0]:0.5, self.world_size[1]:0:-0.5]
-        pos = np.dstack((x, y))
         rv = multivariate_normal(mu, sigma)
-        z = rv.pdf(pos)
+        z = rv.pdf(self.mesh_coords)
         plt.figure(figsize=self.figsize)
         fig = plt.gcf()
-        ax = fig.gca()
+        # ax = fig.gca()
         ax = fig.add_axes([0, 0, 1, 1])
         ax.invert_yaxis()
         # ax.set_axis_off()
         # levels = [0.0000005, 0.000001, 0.00001, 0.0001, 0.0002, 0.00025]
-        cs = ax.contourf(x, y, z, levels=5, cmap='coolwarm')
-        # ax.set_xscale('log')
+        cs = ax.contourf(self.x_mesh, self.y_mesh, z, levels=5, cmap='coolwarm')
         # ax.contour(cs, colors='k')
 
-        # Major ticks every 20, minor ticks every 5
-        x_ticks = np.arange(0, self.world_size[0], self.world_size[0]/20)
-        y_ticks = np.arange(0, self.world_size[1], self.world_size[1]/20)
-        #
-        ax.set_xticks(x_ticks)
-        ax.set_yticks(y_ticks)
+        ax.set_xticks(self.x_ticks)
+        ax.set_yticks(self.y_ticks)
 
         # And a corresponding grid
-        ax.grid(which='both', c='k', ls='-', alpha=0.3)
+        ax.grid(c='k', ls='-', alpha=0.3)
         return utils.fig2surface(fig)
 
-
-
-# import matplotlib.pyplot as plt
-# import numpy as np
-#
-# x, y = np.mgrid[-10:10:.1, -10:10:.1]
-# rv = multivariate_normal([0, 0], [[10.0, 2.], [2., 10.0]])
-# pos = np.dstack((x, y))
-# z = rv.pdf(pos)
-# plt.contourf(x, y, z, cmap='coolwarm')
-# plt.show()
 kf = Kalman_2D()
 kf.start()
