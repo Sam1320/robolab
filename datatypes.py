@@ -18,10 +18,11 @@ class RobotDiff:
         self.sense_noise = 0
         self.landmarks = landmarks
         self.image_original = image
-        self.image = pg.transform.rotozoom(self.image_original, math.degrees(self.orientation), 1)
+        if self.image_original:
+            self.image = pg.transform.rotozoom(self.image_original, math.degrees(self.orientation), 1)
 
-    def get_state(self):
-        return self.x, self.y, self.orientation
+    def get_position(self):
+        return self.x, self.y
 
     def move(self, linear_v, angular_v):
         dt = 1
@@ -58,7 +59,6 @@ class RobotGUI:
         self.dpi = utils.get_dpi()
 
         self.figsize = (int(self.plot_width/self.dpi), int(self.plot_height/self.dpi))
-        self.plot = pg.transform.smoothscale(self.plot2surface(), (self.plot_width, self.plot_height))
 
     def start(self):
         pg.init()
@@ -72,14 +72,8 @@ class RobotGUI:
             pg.display.flip()
 
     def draw(self):
-        self.screen.blit(self.plot, (self.panel_width, 0))
-        robotx, roboty, orientation = self.robot.get_state()
-        robotx_screen, roboty_screen = self.world2screen((robotx, roboty))
-        # center of the robot should coincide with center of the image instead of the upper left corner
-        frame = self.robot.image.get_rect()
-        frame.center = robotx_screen, roboty_screen
-        pg.draw.rect(self.screen, (0, 0, 0), frame, 1)
-        self.screen.blit(self.robot.image, frame)
+        pass
+
 
     def handle_events(self):
         pass
