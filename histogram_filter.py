@@ -10,10 +10,10 @@ black = (0, 0, 0)
 white = (200, 200, 200)
 red = (255, 150, 70)
 green = (128, 255, 128)
-grid_width = 8
-grid_height = 8
+grid_width = 5
+grid_height = 5
 #todo adapt scale to actual screensize
-scale = int((1/grid_width)*600)
+scale = int((1/grid_width)*700)
 font_size = int(scale/10)
 font_size2 = 20
 
@@ -118,7 +118,7 @@ def main():
 
 def drawgrid():
     global probs
-    robot = pg.image.load('robotic.png')
+    robot = pg.image.load('robot1.png')
     robot = pg.transform.smoothscale(robot, (robot_size, robot_size))
 
     for i, y in enumerate(range(0, win_height, cell_height)):

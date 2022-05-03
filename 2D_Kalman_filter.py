@@ -7,19 +7,12 @@ from matplotlib import pyplot as plt
 from scipy.stats import multivariate_normal
 
 import utils
+from datatypes import RobotGUI
+
+dpi =  utils.get_dpi()
 
 
-def get_dpi():
-    import sys
-    from PyQt5.QtWidgets import QApplication
-    app = QApplication(sys.argv)
-    screen = app.screens()[0]
-    dpi = screen.physicalDotsPerInch()
-    app.quit()
-    return dpi
-dpi =  get_dpi()
-
-class Robot:
+class RobotKalman2D():
     def __init__(self, true_position, position_uncertainty, motion_uncertainty, measurement_uncertainty, size):
         self.pos = true_position
         self.mu = list(true_position)
@@ -41,7 +34,7 @@ class Robot:
             self.sigma[1][1] = np.sqrt(self.sigma[1][1]**2 + self.motion_sigma**2)
             self.pos[1] += np.random.normal(motion[1], self.motion_sigma, 1)[0]
 
-    def measure(self):
+    def sense(self):
         measurement = np.random.multivariate_normal(self.pos, self.measurement_sigma, 1)[0]
         self.mu[0] = (self.mu[0]*(self.measurement_sigma[0][0]**2) + measurement[0]*self.sigma[0][0]**2)/ (self.sigma[0][0]**2+self.measurement_sigma[0][0]**2)
         self.mu[1] = (self.mu[1]*(self.measurement_sigma[1][1]**2) + measurement[1]*self.sigma[1][1]**2)/ (self.sigma[1][1]**2+self.measurement_sigma[1][1]**2)
@@ -79,7 +72,7 @@ class Kalman_2D:
 
         motion_sigma = 1.
         measurement_sigma = [[2., 0], [0., 2.]]
-        self.robot = Robot(mu, sigma, motion_uncertainty=motion_sigma, measurement_uncertainty=measurement_sigma, size=self.robot_size)
+        self.robot = RobotKalman2D(mu, sigma, motion_uncertainty=motion_sigma, measurement_uncertainty=measurement_sigma, size=self.robot_size)
         self.outline = 2
 
         # Parameters for plottig the gaussian. This only needs to be calculated once.
@@ -93,33 +86,35 @@ class Kalman_2D:
         self.screen.fill('black')
         while True:
             self.drawgrid()
-            events = pg.event.get()
-            for event in events:
-                if event.type == pg.QUIT:
-                    pg.quit()
-                    sys.exit()
-                if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_LEFT:
-                        motion = (-1 * self.step_size, 0)
-                    elif event.key == pg.K_RIGHT:
-                        motion = (1 * self.step_size, 0)
-                    elif event.key == pg.K_DOWN:
-                        motion = (0, 1 * self.step_size)
-                    elif event.key == pg.K_UP:
-                        motion = (0, -1 * self.step_size)
-                    else:
-                        motion = False
-                    if motion:
-                        # bound motion to the limits of the world
-                        if 0 < motion[0]+self.robot.pos[0] < self.world_size[0] and 0 < motion[1] + self.robot.pos[1] < self.world_size[1]:
-                            self.robot.move(motion)
-                    if event.key == pg.K_m:
-                        self.robot.measure()
+            self.handle_events()
             pg.display.flip()
 
+    def handle_events(self):
+        events = pg.event.get()
+        for event in events:
+            if event.type == pg.QUIT:
+                pg.quit()
+                sys.exit()
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_LEFT:
+                    motion = (-1 * self.step_size, 0)
+                elif event.key == pg.K_RIGHT:
+                    motion = (1 * self.step_size, 0)
+                elif event.key == pg.K_DOWN:
+                    motion = (0, 1 * self.step_size)
+                elif event.key == pg.K_UP:
+                    motion = (0, -1 * self.step_size)
+                else:
+                    motion = False
+                if motion:
+                    # bound motion to the limits of the world
+                    if 0 < motion[0] + self.robot.pos[0] < self.world_size[0] and 0 < motion[1] + self.robot.pos[1] < \
+                            self.world_size[1]:
+                        self.robot.move(motion)
+                if event.key == pg.K_m:
+                    self.robot.sense()
+
     def drawgrid(self):
-        rect = pg.Rect(self.panel_width, 0, self.screen_width, self.screen_height)
-        pg.draw.rect(self.screen, (200, 200, 200), rect, 0)
 
         gauss = self.gauss2surface(self.robot.mu, self.robot.sigma)
         gauss = pg.transform.smoothscale(gauss, (self.plot_width, self.plot_height))
