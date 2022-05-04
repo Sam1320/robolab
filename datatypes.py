@@ -29,6 +29,9 @@ class RobotDiff:
         self.x += (linear_v*dt)*math.cos(self.orientation)
         self.y += (linear_v*dt)*math.sin(self.orientation)
         self.orientation += angular_v*dt
+        print(f'sin(angle)= {math.sin(self.orientation)}')
+        print(f'lin_vel = {linear_v}')
+
         if self.image_original:
             self.image = pg.transform.rotozoom(self.image_original, math.degrees(self.orientation), 1)
 
@@ -60,6 +63,7 @@ class RobotGUI:
 
         self.figsize = (int(self.plot_width/self.dpi), int(self.plot_height/self.dpi))
 
+
     def start(self):
         pg.init()
         clock = pg.time.Clock()
@@ -68,12 +72,19 @@ class RobotGUI:
             self.draw()
             self.handle_events()
             clock.tick(30)
-            print(clock.get_fps())
+            # print(clock.get_fps())
             pg.display.flip()
 
     def draw(self):
-        pass
-
+        plot = pg.transform.smoothscale(self.plot2surface(), (self.plot_width, self.plot_height))
+        self.screen.blit(plot, (self.panel_width, 0))
+        robotx, roboty = self.robot.get_position()
+        robotx_screen, roboty_screen = self.world2screen((robotx, roboty))
+        # center of the robot should coincide with center of the image instead of the upper left corner
+        frame = self.robot.image.get_rect()
+        frame.center = robotx_screen, roboty_screen
+        pg.draw.rect(self.screen, (0, 0, 0), frame, 1)
+        self.screen.blit(self.robot.image, frame)
 
     def handle_events(self):
         pass
@@ -88,10 +99,14 @@ class RobotGUI:
         return utils.fig2surface(fig)
 
     def world2screen(self, pos):
-        x, y = pos[0], (self.world_size[1]-pos[1])
+        x, y = pos[0], pos[1]
         x_norm = x/self.world_size[0]
         y_norm = y/self.world_size[1]
         new_y = self.screen_height*y_norm
         new_x = self.screen_width*x_norm
         new_x += self.panel_width
         return new_x, new_y
+
+if __name__ == "__main__":
+    gui = RobotGUI()
+    gui.start()

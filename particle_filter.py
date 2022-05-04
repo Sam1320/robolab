@@ -14,8 +14,9 @@ LINEAR_STEP = 0.2
 class ParticleFilterGUI(RobotGUI):
     def __init__(self):
         super().__init__()
-        self.particles = [RobotDiff(world_size=self.world_size) for _ in range(10)]
+        self.particles = [RobotDiff(world_size=self.world_size) for _ in range(100)]
         self.moving = False
+        pg.event.set_allowed([pg.QUIT, pg.KEYDOWN, pg.KEYUP])
 
     def handle_events(self):
         for event in pg.event.get():
@@ -46,7 +47,12 @@ class ParticleFilterGUI(RobotGUI):
     def plot2surface(self):
         plt.figure(figsize=self.figsize)
         fig = plt.gcf()
+        # ax = fig.add_axes([0.05, 0.05, 0.9, 0.9])
         ax = fig.add_axes([0, 0, 1, 1])
+        # ax.invert_yaxis()
+        ax.set_ylim([0, self.world_size[1]+20])
+        ax.set_xlim([0, self.world_size[0]+20])
+
         X, Y, U, V = (list() for i in range(4))
         for p in self.particles:
             angle = p.orientation
@@ -55,21 +61,24 @@ class ParticleFilterGUI(RobotGUI):
             U.append(math.cos(angle))
             V.append(math.sin(angle))
         ax.quiver(X, Y, U, V)
-        # plt.xlim(self.world_size[0])
-        # plt.ylim(self.world_size[1])
+        # plt.quiver(X, Y, U, V)
+
+
+
         ax.grid()
+        # plt.grid()
         plt.close()
         return utils.fig2surface(fig)
 
     def draw(self):
-        plot = self.plot2surface()
+        plot = pg.transform.smoothscale(self.plot2surface(), (self.plot_width, self.plot_height))
         self.screen.blit(plot, (self.panel_width, 0))
         robotx, roboty = self.robot.get_position()
         robotx_screen, roboty_screen = self.world2screen((robotx, roboty))
+        roboty_screen = self.screen_height-roboty_screen
         # center of the robot should coincide with center of the image instead of the upper left corner
         frame = self.robot.image.get_rect()
         frame.center = robotx_screen, roboty_screen
-        pg.draw.rect(self.screen, (0, 0, 0), frame, 1)
         self.screen.blit(self.robot.image, frame)
 
 particleGUI = ParticleFilterGUI()
