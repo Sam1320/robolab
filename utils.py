@@ -1,25 +1,20 @@
 import pygame as pg
 from PIL import Image
+import random
+import matplotlib.backends.backend_agg as agg
 
+from datatypes import RobotDiff
 
-def fig2img(fig):
-    """Convert a Matplotlib figure to a PIL Image and return it"""
-    import io
-    buf = io.BytesIO()
-    fig.savefig(buf)
-    buf.seek(0)
-    img = Image.open(buf)
-    return img
-
-
-def pilImageToSurface(pilImage):
-    return pg.image.fromstring(
-        pilImage.tobytes(), pilImage.size, pilImage.mode).convert()
+import math
 
 
 def fig2surface(fig):
-    img = fig2img(fig)
-    surface = pilImageToSurface(img)
+    canvas = agg.FigureCanvasAgg(fig)
+    canvas.draw()
+    size = canvas.get_width_height()
+    renderer = canvas.get_renderer()
+    raw_data = renderer.tostring_rgb()
+    surface = pg.image.fromstring(raw_data, size, "RGB")
     return surface
 
 
@@ -50,3 +45,29 @@ def get_dpi():
     dpi = screen.physicalDotsPerInch()
     app.quit()
     return dpi
+
+
+def Gaussian(mu, sigma, x):
+    # calculates the probability of x for 1-dim Gaussian with mean mu and var. sigma
+    return math.exp(- ((mu - x) ** 2) / (sigma ** 2) / 2.0) / math.sqrt(2.0 * math.pi * (sigma ** 2))
+
+
+def resample(weights, particles, N):
+    """resample N particles with repetition and resampling probabilities proportional to the weights"""
+    # resampling wheel algorithm
+    new_particles = []
+    i = random.sample(range(len(weights) - 1), 1)[0]
+    upper_bound = 2 * max(weights)
+    beta = 0
+    for _ in range(N):
+        beta += random.random() * upper_bound
+        while weights[i] < beta:
+            beta -= weights[i]
+            i += 1
+            i = i % len(weights)
+        new = RobotDiff(state=(particles[i].x, particles[i].y, particles[i].orientation),
+                        forward_noise=particles[i].forward_noise,
+                        turning_noise=particles[i].turning_noise,
+                        sense_noise=particles[i].sense_noise)
+        new_particles.append(new)
+    return new_particles

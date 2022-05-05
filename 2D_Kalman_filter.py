@@ -11,6 +11,8 @@ from datatypes import RobotGUI
 
 dpi =  utils.get_dpi()
 
+#TODO
+# use RobotGUI
 
 class RobotKalman2D():
     def __init__(self, true_position, position_uncertainty, motion_uncertainty, measurement_uncertainty, size):
