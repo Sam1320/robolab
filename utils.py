@@ -1,8 +1,8 @@
 import pygame as pg
 from PIL import Image
 import random
-import matplotlib.backends.backend_agg as agg
-
+# import matplotlib.backends.backend_agg as agg
+import matplotlib.backends.backend_qt5agg as agg
 from datatypes import RobotDiff
 
 import math
@@ -10,6 +10,8 @@ import math
 
 def fig2surface(fig):
     canvas = agg.FigureCanvasAgg(fig)
+    a = agg.FigureCanvasAgg.supports_blit
+    # a = agg.FigureCanvasBase.supports_blit
     canvas.draw()
     size = canvas.get_width_height()
     renderer = canvas.get_renderer()

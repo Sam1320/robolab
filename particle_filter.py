@@ -4,7 +4,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use("Agg")
+matplotlib.use('Qt5Agg')
 
 
 import pygame as pg
@@ -13,13 +13,15 @@ import utils
 from datatypes import RobotGUI, RobotDiff
 
 ANGULAR_STEP = 0.1
-LINEAR_STEP = 0.2
+LINEAR_STEP = 0.3
 
 #TODO
 # check why ship seems to move slightly faster than arrows
 # add more landmarks
 # make moon orbit around the earth?
-# improve fps to >11
+
+# DONE: improve fps to >11
+
 
 class ParticleFilterGUI(RobotGUI):
     def __init__(self):
@@ -29,15 +31,15 @@ class ParticleFilterGUI(RobotGUI):
                           for _ in range(self.n_particles)]
         self.moving = False
 
-        # plt.figure(figsize=self.figsize)
-        # fig = plt.gcf()
-        # ax = fig.add_axes([0, 0, 1, 1])
-        # # ax = fig.add_axes([0.05, 0.05, 0.9, 0.9])
-        #
-        # ax.set_ylim([-5, self.world_size[1] + 5])
-        # ax.set_xlim([-5, self.world_size[0] + 5])
-        # self.fig = fig
-        # self.ax = ax
+
+        fig = plt.figure(figsize=self.figsize)
+        ax = fig.add_axes([0, 0, 1, 1])
+        # ax = fig.add_axes([0.05, 0.05, 0.9, 0.9])
+
+        ax.set_ylim([-5, self.world_size[1] + 5])
+        ax.set_xlim([-5, self.world_size[0] + 5])
+        self.fig = fig
+        self.ax = ax
         self.landmarks = {
             0:
                 {'pos': (10, 30),
@@ -93,13 +95,15 @@ class ParticleFilterGUI(RobotGUI):
             self.particles = utils.resample(particles=self.particles, weights=w, N=self.n_particles)
 
     def plot2surface(self):
-        plt.figure(figsize=self.figsize)
-        fig = plt.gcf()
-        ax = fig.add_axes([0, 0, 1, 1])
-        # ax = fig.add_axes([0.05, 0.05, 0.9, 0.9])
-
-        ax.set_ylim([-5, self.world_size[1] + 5])
-        ax.set_xlim([-5, self.world_size[0] + 5])
+        # plt.figure(figsize=self.figsize)
+        # fig = plt.gcf()
+        # ax = fig.add_axes([0, 0, 1, 1])
+        # # ax = fig.add_axes([0.05, 0.05, 0.9, 0.9])
+        #
+        # self.ax.clear()
+        #
+        # self.ax.set_ylim([-5, self.world_size[1] + 5])
+        # self.ax.set_xlim([-5, self.world_size[0] + 5])
 
         X, Y, U, V = (list() for i in range(4))
         for p in self.particles:
@@ -109,11 +113,14 @@ class ParticleFilterGUI(RobotGUI):
             U.append(math.cos(angle))
             V.append(math.sin(angle))
         # self.ax.grid()
-        ax.quiver(X, Y, U, V, color='red', pivot='middle')#, scale=1/4, units='xy', headwidth=3/2)
 
-        surface = utils.fig2surface(fig)
-        plt.close(fig)
-        # self.ax.clear()
+
+        self.fig.canvas.flush_events()
+        Q = self.ax.quiver(X, Y, U, V, color='red', pivot='middle')#, scale=1/4, units='xy', headwidth=3/2)
+
+        surface = utils.fig2surface(self.fig)
+        plt.close(self.fig)
+        Q.remove()
         return surface
 
     def draw(self):
