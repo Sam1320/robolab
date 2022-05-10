@@ -64,14 +64,14 @@ class RobotGUI:
     def __init__(self, robot_type='diff', robot_img='robot_ship', screen_width=1500, height_width_ratio=2/3, font_size=0):
         self.height_width_ratio = height_width_ratio
         self.screen_width = screen_width
-        self.screen_height = screen_width*self.height_width_ratio
+        self.screen_height = int(screen_width*self.height_width_ratio)
         self.screen = pg.display.set_mode((self.screen_width, self.screen_height), pg.DOUBLEBUF)
         input_width = font_size * 2
         label_width = font_size * 8
         self.panel_width = input_width * label_width
         self.panel_height = self.screen_height
-        self.plot_width = self.screen_width - self.panel_width
-        self.plot_height = self.screen_height
+        self.window_width = self.screen_width - self.panel_width
+        self.window_height = self.screen_height
 
         # robot stuff
         self.world_size = (100, int(100*self.height_width_ratio))
@@ -82,7 +82,7 @@ class RobotGUI:
         # plot stuff
         self.dpi = utils.get_dpi()
 
-        self.figsize = (int(self.plot_width/self.dpi), int(self.plot_height/self.dpi))
+        self.figsize = (int(self.window_width / self.dpi), int(self.window_height / self.dpi))
 
 
     def start(self):
@@ -97,27 +97,10 @@ class RobotGUI:
             pg.display.flip()
 
     def draw(self):
-        plot = pg.transform.smoothscale(self.plot2surface(), (self.plot_width, self.plot_height))
-        self.screen.blit(plot, (self.panel_width, 0))
-        robotx, roboty = self.robot.get_position()
-        robotx_screen, roboty_screen = self.world2screen((robotx, roboty))
-        # center of the robot should coincide with center of the image instead of the upper left corner
-        frame = self.robot.image.get_rect()
-        frame.center = robotx_screen, roboty_screen
-        pg.draw.rect(self.screen, (0, 0, 0), frame, 1)
-        self.screen.blit(self.robot.image, frame)
+        pass
 
     def handle_events(self):
         pass
-
-    def plot2surface(self):
-        plt.figure(figsize=self.figsize)
-        fig = plt.gcf()
-        ax = fig.add_axes([0, 0, 1, 1])
-        ax.plot()
-        ax.grid()
-        plt.close()
-        return utils.fig2surface(fig)
 
     def world2screen(self, pos):
         x, y = pos[0], self.world_size[1]-pos[1]
@@ -127,7 +110,3 @@ class RobotGUI:
         new_x = self.screen_width*x_norm
         new_x += self.panel_width
         return new_x, new_y
-
-if __name__ == "__main__":
-    gui = RobotGUI()
-    gui.start()

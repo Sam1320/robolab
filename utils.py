@@ -1,17 +1,13 @@
 import pygame as pg
-from PIL import Image
 import random
-# import matplotlib.backends.backend_agg as agg
 import matplotlib.backends.backend_qt5agg as agg
-from datatypes import RobotDiff
 
 import math
 
 
+
 def fig2surface(fig):
     canvas = agg.FigureCanvasAgg(fig)
-    a = agg.FigureCanvasAgg.supports_blit
-    # a = agg.FigureCanvasBase.supports_blit
     canvas.draw()
     size = canvas.get_width_height()
     renderer = canvas.get_renderer()
@@ -54,7 +50,7 @@ def Gaussian(mu, sigma, x):
     return math.exp(- ((mu - x) ** 2) / (sigma ** 2) / 2.0) / math.sqrt(2.0 * math.pi * (sigma ** 2))
 
 
-def resample(weights, particles, N):
+def resample(weights, particles, N, robotclass):
     """resample N particles with repetition and resampling probabilities proportional to the weights"""
     # resampling wheel algorithm
     new_particles = []
@@ -67,7 +63,7 @@ def resample(weights, particles, N):
             beta -= weights[i]
             i += 1
             i = i % len(weights)
-        new = RobotDiff(state=(particles[i].x, particles[i].y, particles[i].orientation),
+        new = robotclass(state=(particles[i].x, particles[i].y, particles[i].orientation),
                         forward_noise=particles[i].forward_noise,
                         turning_noise=particles[i].turning_noise,
                         sense_noise=particles[i].sense_noise)
