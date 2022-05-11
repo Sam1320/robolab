@@ -25,6 +25,7 @@ LINEAR_STEP = 0.3
 # DONE: improve fps to >11
 # DONE: improve fps to >5
 
+
 class ParticleFilterGUI(RobotGUI):
     def __init__(self):
         super().__init__(screen_width=1000, height_width_ratio=1/2, robot_img="startup")

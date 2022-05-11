@@ -90,7 +90,6 @@ class RobotGUI:
         self.robot = RobotParticle(world_size=self.world_size, image=robot_img) if robot_type == 'diff' else None
         # plot stuff
         self.dpi = utils.get_dpi()
-
         self.figsize = (int(self.window_width / self.dpi), int(self.window_height / self.dpi))
 
 
