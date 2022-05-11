@@ -10,7 +10,7 @@ matplotlib.use('Qt5Agg')
 import pygame as pg
 
 import utils
-from datatypes import RobotGUI, RobotDiff
+from datatypes import RobotGUI, RobotParticle
 
 ANGULAR_STEP = 0.1
 LINEAR_STEP = 0.3
@@ -29,7 +29,7 @@ class ParticleFilterGUI(RobotGUI):
     def __init__(self):
         super().__init__(screen_width=1000, height_width_ratio=1/2, robot_img="startup")
         self.n_particles = 200
-        self.particles = [RobotDiff(world_size=self.world_size, forward_noise=0.05, turning_noise=0.05, sense_noise=5)
+        self.particles = [RobotParticle(world_size=self.world_size, forward_noise=0.05, turning_noise=0.05, sense_noise=5)
                           for _ in range(self.n_particles)]
         self.moving = False
 
@@ -94,7 +94,7 @@ class ParticleFilterGUI(RobotGUI):
             w = []
             for p in self.particles:
                 w.append(p.measurement_prob(Z, self.landmarks_pos))
-            self.particles = utils.resample(particles=self.particles, weights=w, N=self.n_particles, robotclass=RobotDiff)
+            self.particles = utils.resample(particles=self.particles, weights=w, N=self.n_particles, robotclass=RobotParticle)
 
     def plot2surface(self):
         X, Y, U, V = (list() for i in range(4))

@@ -1,15 +1,24 @@
 import sys
 
 import pygame as pg
-import matplotlib.pyplot as plt
 import random
 import math
-
 
 import utils
 
 
-class RobotDiff:
+class RobotGrid:
+    def __init__(self, world_size=(100, 100)):
+        self.x = int(random.random()*world_size[0])
+        self.y = int(random.random()*world_size[1])
+        self.world_size = world_size
+
+    def move(self, dx, dy):
+        self.x = (self.x+dx) % self.world_size[0]
+        self.y = (self.y+dy) % self.world_size[1]
+
+
+class RobotParticle:
     def __init__(self, world_size=(100, 100), state=None, forward_noise=0, turning_noise=0, sense_noise=0, image=None):
         if not state:
             self.x = random.random()*world_size[0]
@@ -78,7 +87,7 @@ class RobotGUI:
         self.robot_size = self.screen_width//30
         robot_img = pg.transform.smoothscale(pg.image.load(f'{robot_img}.png').convert_alpha(), (self.robot_size, self.robot_size))
         robot_img = pg.transform.rotozoom(robot_img, -90, 1)
-        self.robot = RobotDiff(world_size=self.world_size, image=robot_img) if robot_type == 'diff' else None
+        self.robot = RobotParticle(world_size=self.world_size, image=robot_img) if robot_type == 'diff' else None
         # plot stuff
         self.dpi = utils.get_dpi()
 
@@ -93,7 +102,7 @@ class RobotGUI:
             self.draw()
             self.handle_events()
             clock.tick(30)
-            print(clock.get_fps())
+            # print(clock.get_fps())
             pg.display.flip()
 
     def draw(self):

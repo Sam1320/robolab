@@ -69,3 +69,71 @@ def resample(weights, particles, N, robotclass):
                         sense_noise=particles[i].sense_noise)
         new_particles.append(new)
     return new_particles
+
+
+def heuristic(position, goal):
+    """Estimation of distance from position to goal."""
+    return abs(position[0]-goal[0]) + abs(position[1]-goal[1])
+
+
+def search(grid, init, goal, heuristic, cost=1):
+    """A* implementation. Find best path from init to goal position."""
+    moves = [[-1, 0 ], [0, -1], [1, 0], [0, 1]]
+    moves_char = ['^', '<', 'v','>']
+    closed = [[0 for col in range(len(grid[0]))] for row in range(len(grid))]
+    closed[init[0]][init[1]] = 1
+    expand = [[-1 for col in range(len(grid[0]))] for row in range(len(grid))]
+    action = [[-1 for col in range(len(grid[0]))] for row in range(len(grid))]
+    result = [[' ' for col in range(len(grid[0]))] for row in range(len(grid))]
+    row, col = init
+    g = 0
+    f = heuristic(init, goal)
+    h = g+f
+    open = [[h, row, col]]
+    found = False
+    resign = False
+    count = 0
+
+    while not found and not resign:
+        if len(open) == 0:
+            resign = True
+            return 'No path to goal found.'
+        else:
+            open.sort()
+            next = open.pop(0)
+            h, row, col = next
+            expand[row][col] = count
+            count += 1
+            if [row, col] == goal:
+                found = True
+            else:
+                for i in range(len(moves)):
+                    new_row = row + moves[i][0]
+                    new_col = col + moves[i][1]
+                    if 0 <= new_row < len(grid) and 0 <= new_col < len(grid[0]):
+                        if not closed[new_row][new_col] and not grid[new_row][new_col]:
+                            g2 = g + cost
+                            f2 = heuristic([new_row, new_col], goal)
+                            h2 = g2 + f2
+                            open.append([h2, new_row, new_col])
+                            closed[new_row][new_col] = 1
+    cur_min = math.inf
+    cur = goal
+    result[goal[0]][goal[1]] = '*'
+    while cur_min > 0:
+        row, col = cur
+        for i in range(len(moves)):
+            new_row = row + moves[i][0]
+            new_col = col + moves[i][1]
+            if 0 <= new_row < len(grid) and 0 <= new_col < len(grid[0]) and expand[new_row][new_col] != -1:
+                if expand[new_row][new_col] < cur_min:
+                    cur_min = expand[new_row][new_col]
+                    min_n = [new_row, new_col]
+        diff_row = row-min_n[0]
+        diff_col = col-min_n[1]
+        for move_idx, move in enumerate(moves):
+            if move == [diff_row, diff_col]:
+                result[min_n[0]][min_n[1]] = moves_char[move_idx]
+        cur = min_n
+    return result
+
