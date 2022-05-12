@@ -1,36 +1,40 @@
+import os.path
 import pickle
 import random
 import sys
 import pygame as pg
 from datatypes import RobotGUI
 import utils
+import env
 
 #TODO
 # choose better arrow and start icons (sharper edges)
-# generate grid at random
 # add interface to specify grid size
+# optimize RobotGUI and subclasses structure
 
 # DONE: add button to save grid
+# DONE: generate grid at random
 
 
 class MotionPlanningGUI(RobotGUI):
-    def __init__(self, world_size=(20, 10), load_grid=True):
+    def __init__(self, world_size=(10, 10), load_grid=False):
         self.world_size = world_size
         if load_grid:
             with open('grid.pickle', 'rb') as file:
                 self.grid = pickle.load(file)
                 self.world_size = len(self.grid[1]), len(self.grid[0])
         else:
-            self.grid = [[0 if random.random() < 1. else 1 for row in range(self.world_size[0])] for col in range(self.world_size[1])]
-        scale = int((1/world_size[0])*900)
+            self.grid = [[0 if random.random() < .8 else 1 for row in range(self.world_size[0])] for col in range(self.world_size[1])]
+        scale = int((1/world_size[0])*800)
         self.window_width = scale * world_size[0]
         self.window_height = scale * world_size[1]
         self.grid_colors = {'free': (200, 200, 200), 'obstacle': (50, 50, 50)}
         self.screen = pg.display.set_mode((self.window_width, self.window_height), pg.DOUBLEBUF)
-        arrow_img = pg.transform.smoothscale(pg.image.load('arrow.png'), (scale/2, scale/2))
-        goal_img = pg.transform.smoothscale(pg.image.load('goal.png'), (scale/2, scale/2))
-        start_img = pg.transform.smoothscale(pg.image.load('start.png'), (scale/2, scale/2))
-        exclamation_img = pg.transform.smoothscale(pg.image.load('exclamation.png'), (scale/2, scale/2))
+        img_size = scale/2
+        arrow_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'arrow.png')), (img_size, img_size))
+        goal_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'goal.png')), (img_size, img_size))
+        start_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'start.png')), (img_size, img_size))
+        exclamation_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'exclamation.png')), (img_size, img_size))
         self.arrows = {
             '^': pg.transform.rotozoom(arrow_img, 90, 1),
             '>': pg.transform.rotozoom(arrow_img, 0, 1),
@@ -40,20 +44,10 @@ class MotionPlanningGUI(RobotGUI):
             '!': exclamation_img,
             'start': start_img
         }
-        # self.grid = [[0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-        #              [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-        #              [1, 1, 1, 0, 1, 1, 1, 1, 1, 0],
-        #              [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        #              [0, 1, 0, 0, 1, 1, 1, 1, 0, 0],
-        #              [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        #              [0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-        #              [0, 1, 0, 0, 0, 1, 0, 1, 1, 1],
-        #              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        #              [0, 1, 0, 0, 0, 1, 1, 1, 0, 0]]
         self.goal = None
         self.start_pos = None
         self.cell_size = scale
-        self.outline_thickness = 2
+        self.outline_thickness = 1
         self.path = [[' ' for col in range(self.world_size[0])] for row in range(self.world_size[1])]
 
     def draw(self):
@@ -93,6 +87,7 @@ class MotionPlanningGUI(RobotGUI):
                 if event.key == pg.K_RETURN:
                     with open('grid.pickle', 'wb') as file:
                         pickle.dump(self.grid, file)
+
     def coords_to_row_col(self, x, y):
         """Converts x y coordinates to col and row numbers."""
         row, col = None, None

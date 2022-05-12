@@ -1,38 +1,21 @@
-import matplotlib
-matplotlib.use("Agg")
-
-import matplotlib.backends.backend_agg as agg
-
-
-import pylab
-
-fig = pylab.figure(figsize=[4, 4], # Inches
-                   dpi=100,        # 100 dots per inch, so the resulting buffer is 400x400 pixels
-                   )
-ax = fig.gca()
-ax.plot([1, 2, 4])
-
-canvas = agg.FigureCanvasAgg(fig)
-canvas.draw()
-renderer = canvas.get_renderer()
-raw_data = renderer.tostring_rgb()
-
 import pygame
-from pygame.locals import *
-
+import pygame_menu
 pygame.init()
+surface = pygame.display.set_mode((600, 400))
 
-window = pygame.display.set_mode((600, 400), DOUBLEBUF)
-screen = pygame.display.get_surface()
+def set_difficulty(value, difficulty):
+    # Do the job here !
+    pass
 
-size = canvas.get_width_height()
+def start_the_game():
+    # Do the job here !
+    pass
 
-surf = pygame.image.fromstring(raw_data, size, "RGB")
-screen.blit(surf, (0,0))
-pygame.display.flip()
+menu = pygame_menu.Menu('Welcome', 400, 300,
+                       theme=pygame_menu.themes.THEME_BLUE)
 
-crashed = False
-while not crashed:
-	for event in pygame.event.get():
-		if event.type == pygame.QUIT:
-			crashed = True
+menu.add.text_input('Name :', default='John Doe')
+menu.add.selector('Difficulty :', [('Hard', 1), ('Easy', 2)], onchange=set_difficulty)
+menu.add.button('Play', start_the_game)
+menu.add.button('Quit', pygame_menu.events.EXIT)
+menu.mainloop(surface)
