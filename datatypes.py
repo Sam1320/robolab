@@ -92,7 +92,6 @@ class RobotGUI:
         self.dpi = utils.get_dpi()
         self.figsize = (int(self.window_width / self.dpi), int(self.window_height / self.dpi))
 
-
     def start(self):
         pg.init()
         clock = pg.time.Clock()
@@ -100,7 +99,7 @@ class RobotGUI:
         while 1:
             self.draw()
             self.handle_events()
-            clock.tick(30)
+            clock.tick(10)
             # print(clock.get_fps())
             pg.display.flip()
 

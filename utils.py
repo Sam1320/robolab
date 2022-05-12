@@ -83,25 +83,29 @@ def search(grid, init, goal, heuristic, cost=1):
     closed = [[0 for col in range(len(grid[0]))] for row in range(len(grid))]
     closed[init[0]][init[1]] = 1
     expand = [[-1 for col in range(len(grid[0]))] for row in range(len(grid))]
-    action = [[-1 for col in range(len(grid[0]))] for row in range(len(grid))]
     result = [[' ' for col in range(len(grid[0]))] for row in range(len(grid))]
     row, col = init
     g = 0
     f = heuristic(init, goal)
     h = g+f
-    open = [[h, row, col]]
+    open = [[h, g, row, col]]
     found = False
     resign = False
     count = 0
+    # mark closest position to goal in case no path is found
+    min_f = f
+    min_f_pos = init.copy()
 
     while not found and not resign:
         if len(open) == 0:
             resign = True
-            return 'No path to goal found.'
         else:
             open.sort()
             next = open.pop(0)
-            h, row, col = next
+            g = next[1]
+            row = next[2]
+            col = next[3]
+
             expand[row][col] = count
             count += 1
             if [row, col] == goal:
@@ -115,11 +119,15 @@ def search(grid, init, goal, heuristic, cost=1):
                             g2 = g + cost
                             f2 = heuristic([new_row, new_col], goal)
                             h2 = g2 + f2
-                            open.append([h2, new_row, new_col])
+                            if f2 <= min_f:
+                                min_f = f2
+                                min_f_pos = [new_row, new_col]
+                            open.append([h2, g2, new_row, new_col])
                             closed[new_row][new_col] = 1
     cur_min = math.inf
-    cur = goal
+    cur = goal if not resign else min_f_pos
     result[goal[0]][goal[1]] = '*'
+
     while cur_min > 0:
         row, col = cur
         for i in range(len(moves)):
@@ -135,5 +143,7 @@ def search(grid, init, goal, heuristic, cost=1):
             if move == [diff_row, diff_col]:
                 result[min_n[0]][min_n[1]] = moves_char[move_idx]
         cur = min_n
+    if resign:
+        result[min_f_pos[0]][min_f_pos[1]] = '!'
     return result
 
