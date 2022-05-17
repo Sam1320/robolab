@@ -1,9 +1,13 @@
 import math
+import os.path
 import random
 import sys
 
 import matplotlib.pyplot as plt
 import matplotlib
+
+import env
+
 matplotlib.use('Qt5Agg')
 
 
@@ -59,18 +63,28 @@ class ParticleFilterGUI(RobotGUI):
         }
         self.landmarks_pos = [l['pos'] for l in self.landmarks.values()]
         self.landmarks_imgs = []
+
+    def init_pygame(self):
+        self.screen = pg.display.set_mode((self.screen_width, self.screen_height), pg.DOUBLEBUF)
+        self.screen.fill('black')
+        robot_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, f'{self.robot_img}.png')).convert_alpha(), (self.robot_size, self.robot_size))
+        robot_img = pg.transform.rotozoom(robot_img, -90, 1)
+        self.robot = RobotParticle(world_size=self.world_size, image=robot_img) if self.robot_type == 'diff' else None
         for landmark in self.landmarks.values():
             file = landmark['file']
             size = landmark['size']
-            self.landmarks_imgs.append(pg.transform.smoothscale(pg.image.load(file).convert_alpha(), (size, size)))
-
-        pg.event.set_allowed([pg.QUIT, pg.KEYDOWN, pg.KEYUP])
+            self.landmarks_imgs.append(pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, file)).convert_alpha(), (size, size)))
+        # pg.event.set_allowed([pg.QUIT, pg.KEYDOWN, pg.KEYUP])
 
     def handle_events(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                pg.quit()
-                sys.exit()
+                # sys.exit()
+                # pg.quit()
+                # del self.particles,
+
+                return 1
+                # pg.display.quit()
             elif event.type == pg.KEYDOWN:
                 angular, linear = 0, 0
                 if event.key == pg.K_LEFT:
@@ -81,6 +95,10 @@ class ParticleFilterGUI(RobotGUI):
                     linear = 1 * LINEAR_STEP
                 elif event.key == pg.K_DOWN:
                     linear = -1 * LINEAR_STEP
+                elif event.key == pg.K_ESCAPE:
+                    # del self.particles
+                    # plt.close()
+                    return 1
                 self.linear = linear
                 self.angular = angular
                 self.moving = True
@@ -96,6 +114,7 @@ class ParticleFilterGUI(RobotGUI):
             for p in self.particles:
                 w.append(p.measurement_prob(Z, self.landmarks_pos))
             self.particles = utils.resample(particles=self.particles, weights=w, N=self.n_particles, robotclass=RobotParticle)
+        return 0
 
     def plot2surface(self):
         X, Y, U, V = (list() for i in range(4))
@@ -128,6 +147,11 @@ class ParticleFilterGUI(RobotGUI):
             pos = self.world2screen(self.landmarks[i]['pos'])
             self.screen.blit(img, pos)
 
-
-particleGUI = ParticleFilterGUI()
-particleGUI.start()
+if __name__ == "__main__":
+    import gc
+    particleGUI = ParticleFilterGUI()
+    print(particleGUI.start(verbose=True, fps=30))
+    del particleGUI
+    gc.collect()
+    particleGUI = ParticleFilterGUI()
+    particleGUI.start()

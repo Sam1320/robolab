@@ -25,17 +25,26 @@ class MotionPlanningGUI(RobotGUI):
                 self.world_size = len(self.grid[1]), len(self.grid[0])
         else:
             self.grid = [[0 if random.random() < .8 else 1 for row in range(self.world_size[0])] for col in range(self.world_size[1])]
-        scale = int((1/world_size[0])*800)
-        self.window_width = scale * world_size[0]
-        self.window_height = scale * world_size[1]
+        self.scale = int((1/world_size[0])*800)
+        self.window_width = self.scale * world_size[0]
+        self.window_height = self.scale * world_size[1]
         self.grid_colors = {'free': (200, 200, 200), 'obstacle': (50, 50, 50)}
+
+        self.goal = None
+        self.start_pos = None
+        self.cell_size = self.scale
+        self.outline_thickness = 1
+        self.path = [[' ' for col in range(self.world_size[0])] for row in range(self.world_size[1])]
+
+    def init_pygame(self):
+        img_size = self.scale/2
         self.screen = pg.display.set_mode((self.window_width, self.window_height), pg.DOUBLEBUF)
-        img_size = scale/2
+        self.screen.fill('black')
         arrow_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'arrow.png')), (img_size, img_size))
         goal_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'goal.png')), (img_size, img_size))
         start_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'start.png')), (img_size, img_size))
         exclamation_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'exclamation.png')), (img_size, img_size))
-        self.arrows = {
+        self.images = {
             '^': pg.transform.rotozoom(arrow_img, 90, 1),
             '>': pg.transform.rotozoom(arrow_img, 0, 1),
             'v': pg.transform.rotozoom(arrow_img, -90, 1),
@@ -44,11 +53,6 @@ class MotionPlanningGUI(RobotGUI):
             '!': exclamation_img,
             'start': start_img
         }
-        self.goal = None
-        self.start_pos = None
-        self.cell_size = scale
-        self.outline_thickness = 1
-        self.path = [[' ' for col in range(self.world_size[0])] for row in range(self.world_size[1])]
 
     def draw(self):
         for row, y in enumerate(range(0, self.window_height, self.cell_size)):
@@ -59,15 +63,14 @@ class MotionPlanningGUI(RobotGUI):
                 pg.draw.rect(self.screen, cell_color, rect, 0)
                 policy = self.path[row][col]
                 if self.start_pos == [row, col]:
-                    self.screen.blit(self.arrows['start'], (x+self.cell_size/4, y+self.cell_size/4))
+                    self.screen.blit(self.images['start'], (x + self.cell_size / 4, y + self.cell_size / 4))
                 elif policy != ' ':
-                    self.screen.blit(self.arrows[policy], (x+self.cell_size/4, y+self.cell_size/4))
+                    self.screen.blit(self.images[policy], (x + self.cell_size / 4, y + self.cell_size / 4))
 
     def handle_events(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                pg.quit()
-                sys.exit()
+                return 1
             elif event.type == pg.MOUSEBUTTONUP:
                 state = event.button
                 match state:
@@ -87,6 +90,9 @@ class MotionPlanningGUI(RobotGUI):
                 if event.key == pg.K_RETURN:
                     with open('grid.pickle', 'wb') as file:
                         pickle.dump(self.grid, file)
+                elif event.key == pg.K_ESCAPE:
+                    return 1
+        return 0
 
     def coords_to_row_col(self, x, y):
         """Converts x y coordinates to col and row numbers."""
@@ -106,5 +112,5 @@ class MotionPlanningGUI(RobotGUI):
 
 if __name__ == "__main__":
     motiongui = MotionPlanningGUI()
-    motiongui.start()
+    motiongui.start(fps=10)
 

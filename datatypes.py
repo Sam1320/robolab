@@ -1,11 +1,16 @@
+import os.path
 import sys
 
 import pygame as pg
 import random
 import math
 
+import env
 import utils
 
+#TODO:
+# get rid of panels (replaced by a start window for adjusting settings)
+# get rid of get_dpi() and find better alternative
 
 class RobotGrid:
     def __init__(self, world_size=(100, 100)):
@@ -74,7 +79,6 @@ class RobotGUI:
         self.height_width_ratio = height_width_ratio
         self.screen_width = screen_width
         self.screen_height = int(screen_width*self.height_width_ratio)
-        self.screen = pg.display.set_mode((self.screen_width, self.screen_height), pg.DOUBLEBUF)
         input_width = font_size * 2
         label_width = font_size * 8
         self.panel_width = input_width * label_width
@@ -85,23 +89,30 @@ class RobotGUI:
         # robot stuff
         self.world_size = (100, int(100*self.height_width_ratio))
         self.robot_size = self.screen_width//30
-        robot_img = pg.transform.smoothscale(pg.image.load(f'{robot_img}.png').convert_alpha(), (self.robot_size, self.robot_size))
-        robot_img = pg.transform.rotozoom(robot_img, -90, 1)
-        self.robot = RobotParticle(world_size=self.world_size, image=robot_img) if robot_type == 'diff' else None
+        self.robot_img = robot_img
+        self.robot_type = robot_type
+
         # plot stuff
-        self.dpi = utils.get_dpi()
+        self.dpi = 93 #utils.get_dpi()
         self.figsize = (int(self.window_width / self.dpi), int(self.window_height / self.dpi))
 
-    def start(self):
-        pg.init()
+    def init_pygame(self):
+        """ Initialize display, transform and load images."""
+        pass
+
+    def start(self, verbose=False, fps=30):
+        self.init_pygame()
         clock = pg.time.Clock()
-        self.screen.fill('black')
         while 1:
             self.draw()
-            self.handle_events()
-            clock.tick(10)
-            # print(clock.get_fps())
+            end_game = self.handle_events()
+            clock.tick(fps)
+            if verbose:
+                print(clock.get_fps())
             pg.display.flip()
+            if end_game:
+                return 1
+
 
     def draw(self):
         pass
