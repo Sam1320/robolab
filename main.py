@@ -1,5 +1,42 @@
 import pygame
 import pygame_menu
+import motion_planning
+import particle_filter
+
+
+class AStarMenu(pygame_menu.Menu):
+    def __init__(self, name, width=600, height=400, theme=pygame_menu.themes.THEME_SOLARIZED):
+        super().__init__(name, width, height, theme=theme)
+        self.add.range_slider('Grid Width :', default=10, range_values=list(range(10, 51, 10)))
+        self.add.range_slider('Grid Height :', default=10, range_values=list(range(10, 51, 10)))
+        self.add.button('Ok', self.start_the_game)
+
+    def start(self, surface):
+        self.mainloop(surface)
+
+    def start_the_game(self):
+        self.gui = motion_planning.MotionPlanningGUI()
+        self.gui.start()
+        pygame.display.set_mode((600, 400))
+
+
+class ParticleMenu(pygame_menu.Menu):
+    def __init__(self, name, width=600, height=400, theme=pygame_menu.themes.THEME_SOLARIZED):
+        super().__init__(name, width, height, theme=theme)
+        self.add.range_slider('Number of Particles:', default=200, range_values=[10, 100, 200, 400, 800], onchange=self.set_number_of_particles)
+        self.add.button('Ok', self.start_the_game)
+        self.number_of_particles = 200
+
+    def start(self, surface):
+        self.mainloop(surface)
+
+    def set_number_of_particles(self, value):
+        self.number_of_particles = value
+
+    def start_the_game(self):
+        self.gui = particle_filter.ParticleFilterGUI(n_particles=self.number_of_particles)
+        self.gui.start()
+        pygame.display.set_mode((600, 400))
 
 
 class MainGUI():
@@ -12,8 +49,6 @@ class MainGUI():
 
         self.menu.add.text_input('Name :', default='')
         self.menu.add.selector('Game :', [('Particle Filter', 1), ('A*', 2)], default=1, onchange=self.set_game)
-        # menu.add.range_slider('Grid Width :', default=10, range_values=list(range(10, 51, 10)))
-        # menu.add.range_slider('Grid Height :', default=10, range_values=list(range(10, 51, 10)))
 
         self.menu.add.button('Play', self.start_the_game)
         self.menu.add.button('Quit', pygame_menu.events.EXIT)
@@ -28,12 +63,10 @@ class MainGUI():
         # Do the job here !
         match self.game:
             case 'A*':
-                import motion_planning
-                self.gui = motion_planning.MotionPlanningGUI()
+                self.menu = AStarMenu('A* Settings')
             case 'Particle Filter':
-                import particle_filter
-                self.gui = particle_filter.ParticleFilterGUI()
-        self.gui.start(verbose=True)
+                self.menu = ParticleMenu('Particle Filter Settings')
+        self.menu.start(self.surface)
         self.surface = pygame.display.set_mode((600, 400))
 
 

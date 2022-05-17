@@ -31,9 +31,9 @@ LINEAR_STEP = 0.3
 
 
 class ParticleFilterGUI(RobotGUI):
-    def __init__(self):
+    def __init__(self, n_particles=200):
         super().__init__(screen_width=1000, height_width_ratio=1/2, robot_img="startup")
-        self.n_particles = 200
+        self.n_particles = n_particles
         self.particles = [RobotParticle(world_size=self.world_size, forward_noise=0.05, turning_noise=0.05, sense_noise=5)
                           for _ in range(self.n_particles)]
         self.moving = False
