@@ -17,7 +17,7 @@ import env
 
 
 class MotionPlanningGUI(RobotGUI):
-    def __init__(self, world_size=(10, 10), load_grid=False):
+    def __init__(self, world_size=(10, 6), load_grid=False):
         self.world_size = world_size
         if load_grid:
             with open('grid.pickle', 'rb') as file:

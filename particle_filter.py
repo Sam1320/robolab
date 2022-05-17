@@ -134,7 +134,7 @@ class ParticleFilterGUI(RobotGUI):
         return surface
 
     def draw(self):
-        # plot = pg.transform.smoothscale(self.plot2surface(), (self.plot_width, self.plot_height))
+        # plot = pg.transform.smoothscale(self.plot2surface(), (self.window_width, self.window_height))
         plot = self.plot2surface()
         self.screen.blit(plot, (self.panel_width, 0))
         robotx, roboty = self.robot.get_position()
@@ -148,10 +148,8 @@ class ParticleFilterGUI(RobotGUI):
             self.screen.blit(img, pos)
 
 if __name__ == "__main__":
-    import gc
     particleGUI = ParticleFilterGUI()
-    print(particleGUI.start(verbose=True, fps=30))
-    del particleGUI
-    gc.collect()
+    particleGUI.start(verbose=True, fps=30)
+
     particleGUI = ParticleFilterGUI()
-    particleGUI.start()
+    particleGUI.start(verbose=True, fps=30)

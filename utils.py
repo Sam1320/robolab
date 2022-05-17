@@ -36,13 +36,11 @@ def blit_text(surface, text, pos, width, height, font, color):
 
 def get_dpi():
     """Get screen resolution"""
-    import sys
-    from PyQt5.QtWidgets import QApplication
-    app = QApplication(sys.argv)
-    screen = app.screens()[0]
-    dpi = screen.physicalDotsPerInch()
-    app.quit()
-    return dpi
+    from screeninfo import get_monitors
+    for m in get_monitors():
+        if m.is_primary:
+            dpi = m.width / (m.width_mm / 25.4)
+            return dpi
 
 
 def Gaussian(mu, sigma, x):

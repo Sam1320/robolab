@@ -10,7 +10,8 @@ import utils
 
 #TODO:
 # get rid of panels (replaced by a start window for adjusting settings)
-# get rid of get_dpi() and find better alternative
+
+#DONE: get rid of get_dpi() and find better alternative
 
 class RobotGrid:
     def __init__(self, world_size=(100, 100)):
@@ -93,7 +94,7 @@ class RobotGUI:
         self.robot_type = robot_type
 
         # plot stuff
-        self.dpi = 93 #utils.get_dpi()
+        self.dpi = utils.get_dpi()
         self.figsize = (int(self.window_width / self.dpi), int(self.window_height / self.dpi))
 
     def init_pygame(self):
