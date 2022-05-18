@@ -6,6 +6,7 @@ import pygame as pg
 from datatypes import RobotGUI
 import utils
 import env
+from tkinter import messagebox
 
 #TODO
 # choose better arrow and start icons (sharper edges)
@@ -17,17 +18,18 @@ import env
 
 
 class MotionPlanningGUI(RobotGUI):
-    def __init__(self, world_size=(10, 6), load_grid=False):
+    def __init__(self, world_size=(10, 6), load_grid=False, obstacle_prob=0.2):
         self.world_size = world_size
         if load_grid:
             with open('grid.pickle', 'rb') as file:
                 self.grid = pickle.load(file)
-                self.world_size = len(self.grid[1]), len(self.grid[0])
+                self.world_size = len(self.grid[0]), len(self.grid)
         else:
-            self.grid = [[0 if random.random() < .8 else 1 for row in range(self.world_size[0])] for col in range(self.world_size[1])]
-        self.scale = int((1/world_size[0])*800)
-        self.window_width = self.scale * world_size[0]
-        self.window_height = self.scale * world_size[1]
+            self.grid = [[1 if random.random() < obstacle_prob else 0 for row in range(self.world_size[0])] for col in range(self.world_size[1])]
+        # as the grid gets bigger the cells get smaller
+        self.scale = int((1/(world_size[0]+world_size[1]))*1200)
+        self.window_width = self.scale * self.world_size[0]
+        self.window_height = self.scale * self.world_size[1]
         self.grid_colors = {'free': (200, 200, 200), 'obstacle': (50, 50, 50)}
 
         self.goal = None
@@ -41,7 +43,7 @@ class MotionPlanningGUI(RobotGUI):
         self.screen = pg.display.set_mode((self.window_width, self.window_height), pg.DOUBLEBUF)
         self.screen.fill('black')
         arrow_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'arrow.png')), (img_size, img_size))
-        goal_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'goal.png')), (img_size, img_size))
+        goal_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'flag.png')), (img_size, img_size))
         start_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'start.png')), (img_size, img_size))
         exclamation_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'exclamation.png')), (img_size, img_size))
         self.images = {
@@ -88,6 +90,7 @@ class MotionPlanningGUI(RobotGUI):
                     self.path = utils.search(self.grid, self.start_pos, self.goal, utils.heuristic)
             elif event.type == pg.KEYDOWN:
                 if event.key == pg.K_RETURN:
+                    messagebox.showinfo(title='Info', message='Map saved')
                     with open('grid.pickle', 'wb') as file:
                         pickle.dump(self.grid, file)
                 elif event.key == pg.K_ESCAPE:
