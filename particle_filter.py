@@ -74,17 +74,11 @@ class ParticleFilterGUI(RobotGUI):
             file = landmark['file']
             size = landmark['size']
             self.landmarks_imgs.append(pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, file)).convert_alpha(), (size, size)))
-        # pg.event.set_allowed([pg.QUIT, pg.KEYDOWN, pg.KEYUP])
 
     def handle_events(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                # sys.exit()
-                # pg.quit()
-                # del self.particles,
-
                 return 1
-                # pg.display.quit()
             elif event.type == pg.KEYDOWN:
                 angular, linear = 0, 0
                 if event.key == pg.K_LEFT:
@@ -96,8 +90,6 @@ class ParticleFilterGUI(RobotGUI):
                 elif event.key == pg.K_DOWN:
                     linear = -1 * LINEAR_STEP
                 elif event.key == pg.K_ESCAPE:
-                    # del self.particles
-                    # plt.close()
                     return 1
                 self.linear = linear
                 self.angular = angular
@@ -134,9 +126,8 @@ class ParticleFilterGUI(RobotGUI):
         return surface
 
     def draw(self):
-        # plot = pg.transform.smoothscale(self.plot2surface(), (self.window_width, self.window_height))
         plot = self.plot2surface()
-        self.screen.blit(plot, (self.panel_width, 0))
+        self.screen.blit(plot, (0, 0))
         robotx, roboty = self.robot.get_position()
         robotx_screen, roboty_screen = self.world2screen((robotx, roboty))
         # center of the robot should coincide with center of the image instead of the upper left corner
@@ -147,9 +138,7 @@ class ParticleFilterGUI(RobotGUI):
             pos = self.world2screen(self.landmarks[i]['pos'])
             self.screen.blit(img, pos)
 
-if __name__ == "__main__":
-    particleGUI = ParticleFilterGUI()
-    particleGUI.start(verbose=True, fps=30)
 
-    particleGUI = ParticleFilterGUI()
+if __name__ == "__main__":
+    particleGUI = ParticleFilterGUI(10, 0.05, 0.05, 5)
     particleGUI.start(verbose=True, fps=30)

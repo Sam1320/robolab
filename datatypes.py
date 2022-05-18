@@ -4,7 +4,7 @@ import sys
 import pygame as pg
 import random
 import math
-
+import numpy as np
 import env
 import utils
 
@@ -23,6 +23,32 @@ class RobotGrid:
         self.x = (self.x+dx) % self.world_size[0]
         self.y = (self.y+dy) % self.world_size[1]
 
+class RobotKalman2D():
+    def __init__(self, true_position, position_uncertainty, motion_uncertainty, measurement_uncertainty, size):
+        self.pos = true_position
+        self.mu = list(true_position)
+        self.sigma = position_uncertainty
+        self.measurement_sigma = measurement_uncertainty
+        self.motion_sigma = motion_uncertainty
+        self.size = size
+
+    def move(self, motion):
+        # motion update. Predict new position and variance.
+        if motion[0]:
+            self.mu[0] += motion[0]
+            self.sigma[0][0] = np.sqrt(self.sigma[0][0]**2 + self.motion_sigma**2)
+            self.pos[0] += np.random.normal(motion[0], self.motion_sigma)
+        elif motion[1]:
+            self.mu[1] += motion[1]
+            self.sigma[1][1] = np.sqrt(self.sigma[1][1]**2 + self.motion_sigma**2)
+            self.pos[1] += np.random.normal(motion[1], self.motion_sigma)
+
+    def sense(self):
+        measurement = np.random.multivariate_normal(self.pos, self.measurement_sigma, 1)[0]
+        self.mu[0] = (self.mu[0]*(self.measurement_sigma[0][0]**2) + measurement[0]*self.sigma[0][0]**2)/ (self.sigma[0][0]**2+self.measurement_sigma[0][0]**2)
+        self.mu[1] = (self.mu[1]*(self.measurement_sigma[1][1]**2) + measurement[1]*self.sigma[1][1]**2)/ (self.sigma[1][1]**2+self.measurement_sigma[1][1]**2)
+        self.sigma[0][0] = np.sqrt(1/(1/self.sigma[0][0]**2 + 1/self.measurement_sigma[0][0]**2))
+        self.sigma[1][1] = np.sqrt(1/(1/self.sigma[1][1]**2 + 1/self.measurement_sigma[0][0]**2))
 
 class RobotParticle:
     def __init__(self, world_size=(100, 100), state=None, forward_noise=0, turning_noise=0, sense_noise=0, image=None):
@@ -76,16 +102,10 @@ class RobotParticle:
 
 
 class RobotGUI:
-    def __init__(self, robot_type='diff', robot_img='robot_ship', screen_width=1500, height_width_ratio=2/3, font_size=0):
+    def __init__(self, robot_type='diff', robot_img='robot_ship', screen_width=1500, height_width_ratio=2/3):
         self.height_width_ratio = height_width_ratio
         self.screen_width = screen_width
         self.screen_height = int(screen_width*self.height_width_ratio)
-        input_width = font_size * 2
-        label_width = font_size * 8
-        self.panel_width = input_width * label_width
-        self.panel_height = self.screen_height
-        self.window_width = self.screen_width - self.panel_width
-        self.window_height = self.screen_height
 
         # robot stuff
         self.world_size = (100, int(100*self.height_width_ratio))
@@ -95,13 +115,13 @@ class RobotGUI:
 
         # plot stuff
         self.dpi = utils.get_dpi()
-        self.figsize = (int(self.window_width / self.dpi), int(self.window_height / self.dpi))
+        self.figsize = (int(self.screen_width / self.dpi), int(self.screen_height / self.dpi))
 
     def init_pygame(self):
         """ Initialize display, transform and load images."""
         pass
 
-    def start(self, verbose=False, fps=30):
+    def start(self, verbose=True, fps=30):
         self.init_pygame()
         clock = pg.time.Clock()
         while 1:
@@ -127,5 +147,4 @@ class RobotGUI:
         y_norm = y/self.world_size[1]
         new_y = self.screen_height*y_norm
         new_x = self.screen_width*x_norm
-        new_x += self.panel_width
         return new_x, new_y
