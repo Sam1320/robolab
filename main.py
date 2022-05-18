@@ -3,7 +3,9 @@ import os
 import pygame
 import pygame_menu
 
+import datatypes
 import env
+import kalman_filter_2d
 import motion_planning
 import particle_filter
 
@@ -12,14 +14,38 @@ import particle_filter
 # add explanation window
 
 
-class AStarMenu(pygame_menu.Menu):
+class GameMenu(pygame_menu.Menu):
     def __init__(self, name, surface, width=600, height=400, theme=pygame_menu.themes.THEME_SOLARIZED):
         super().__init__(name, width, height, theme=theme, onclose=pygame_menu.events.BACK)
-
         self.add.button('Controls', self.controls)
         self.add.button('Settings', self.settings)
         self.add.button('Play', self.start_the_game)
         self.add.button('Back', self.go_back)
+        self.surface = surface
+        self.gui_class = datatypes.RobotGUI
+
+    def controls(self):
+        pass
+
+    def settings(self):
+        pass
+
+    def go_back(self):
+        self.close()
+
+    def start(self):
+        self.mainloop(self.surface)
+
+    def start_the_game(self):
+        pass
+    #     self.gui = self.gui_class()
+    #     self.gui.start()
+    #     pygame.display.set_mode((600, 400))
+
+
+class AStarMenu(GameMenu):
+    def __init__(self, name, surface, width=600, height=400, theme=pygame_menu.themes.THEME_SOLARIZED):
+        super().__init__(name, surface, width, height, theme=theme)
         self.width = 10
         self.height = 10
         self.surface = surface
@@ -28,7 +54,6 @@ class AStarMenu(pygame_menu.Menu):
 
     def controls(self):
         menu = pygame_menu.Menu('A* Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
-
         table = menu.add.table()
         table.add_row(['Left click', 'set star position'], cell_padding=8, cell_font_size=20)
         table.add_row(['Right click', 'set goal position'], cell_padding=8, cell_font_size=20)
@@ -60,26 +85,16 @@ class AStarMenu(pygame_menu.Menu):
     def set_height(self, value):
         self.height = value
 
-    def go_back(self):
-        self.close()
-
-    def start(self):
-        self.mainloop(self.surface)
-
     def start_the_game(self):
         self.gui = motion_planning.MotionPlanningGUI(world_size=(self.width, self.height), load_grid=self.load_map, obstacle_prob=self.obstacle_prob)
         self.gui.start()
         pygame.display.set_mode((600, 400))
 
 
-class ParticleMenu(pygame_menu.Menu):
+class ParticleMenu(GameMenu):
     def __init__(self, name, surface, width=600, height=400, theme=pygame_menu.themes.THEME_SOLARIZED):
-        super().__init__(name, width, height, theme=theme, onclose=pygame_menu.events.BACK)
-        self.add.button('Controls', self.controls)
-        self.add.button('Settings', self.settings)
-        self.add.button('Play', self.start_the_game)
-        self.add.button('Back', self.go_back)
-        self.surface = surface
+        super().__init__(name, surface, width, height, theme=theme)
+
         self.number_of_particles = 200
         self.forward_noise = 0.05
         self.turning_noise = 0.05
@@ -111,12 +126,6 @@ class ParticleMenu(pygame_menu.Menu):
         menu.add.button('Back', menu.close)
         menu.mainloop(self.surface)
 
-    def go_back(self):
-        self.close()
-
-    def start(self):
-        self.mainloop(self.surface)
-
     def set_sense_noise(self, value):
         self.sense_noise = value
 
@@ -138,6 +147,16 @@ class ParticleMenu(pygame_menu.Menu):
         pygame.display.set_mode((600, 400))
 
 
+class KalmanFilterMenu(GameMenu):
+    def __init__(self, name, surface, width=600, height=400, theme=pygame_menu.themes.THEME_SOLARIZED):
+        super().__init__(name, surface, width, height, theme=theme)
+        self.sense_noise = 5
+
+    def start_the_game(self):
+        self.gui = kalman_filter_2d.Kalman_2D()
+        self.gui.start()
+        pygame.display.set_mode((600, 400))
+
 class MainGUI():
     def __init__(self):
         pygame.init()
@@ -147,7 +166,7 @@ class MainGUI():
                                 theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.EXIT)
         self.image = None
         self.menu.add.text_input('Name :', default='UserName')
-        self.menu.add.selector('Game :', [('Particle Filter', 1), ('A*', 2)], default=0, onchange=self.set_game)
+        self.menu.add.selector('Game :', [('Particle Filter', 1), ('Kalman Filter', 2), ('A*', 3)], default=0, onchange=self.set_game)
         self.image = self.menu.add.image(os.path.join(env.images_path, 'spaceship.png'), scale=(0.25,0.25))
         self.menu.add.button('Next', self.start_the_game)
         self.menu.add.button('Quit', pygame_menu.events.EXIT)
@@ -163,6 +182,8 @@ class MainGUI():
                 img_name = 'spaceship.png'
             case 'A*':
                 img_name = 'flag.png'
+            case 'Kalman Filter':
+                img_name = 'robot2.png'
         image = pygame_menu.baseimage.BaseImage(os.path.join(env.images_path, img_name))
         image = image.scale(0.25, 0.25)
         if self.image:
@@ -175,6 +196,8 @@ class MainGUI():
                 self.menu = AStarMenu('A*', self.surface)
             case 'Particle Filter':
                 self.menu = ParticleMenu('Particle Filter', self.surface)
+            case 'Kalman Filter':
+                self.menu = KalmanFilterMenu('Kalman Filter', self.surface)
         self.menu.start()
         self.surface = pygame.display.set_mode((600, 400))
 
