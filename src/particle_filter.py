@@ -13,8 +13,8 @@ matplotlib.use('Qt5Agg')
 
 import pygame as pg
 
-import utils
-from datatypes import RobotGUI, RobotParticle
+from src import utils
+from src.datatypes import RobotGUI, RobotParticle
 
 ANGULAR_STEP = 0.1
 LINEAR_STEP = 0.3

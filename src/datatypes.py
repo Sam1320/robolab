@@ -6,7 +6,7 @@ import random
 import math
 import numpy as np
 import env
-import utils
+from src import utils
 
 #TODO:
 # get rid of panels (replaced by a start window for adjusting settings)

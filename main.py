@@ -3,12 +3,12 @@ import os
 import pygame
 import pygame_menu
 
-import datatypes
+from src import datatypes
+from src import kalman_filter_1d
+from src import kalman_filter_2d
+from src import motion_planning
+from src import particle_filter
 import env
-import kalman_filter_1d
-import kalman_filter_2d
-import motion_planning
-import particle_filter
 
 #TODO:
 # improve buttons positions

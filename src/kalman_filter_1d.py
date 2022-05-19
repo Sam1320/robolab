@@ -1,13 +1,13 @@
 import sys
 import random
 
-import datatypes
+from src import datatypes
 import matplotlib.pyplot as plt
 import numpy as np
 import pygame as pg
 import os
 import env
-import utils
+from src import utils
 
 
 class Kalman_1D(datatypes.RobotGUI):

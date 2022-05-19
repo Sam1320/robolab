@@ -3,8 +3,8 @@ import pickle
 import random
 import sys
 import pygame as pg
-from datatypes import RobotGUI
-import utils
+from src.datatypes import RobotGUI
+from src import utils
 import env
 from tkinter import messagebox
 

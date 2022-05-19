@@ -8,9 +8,9 @@ from matplotlib import pyplot as plt
 from scipy.stats import multivariate_normal
 
 import env
-import utils
+from src import utils
 
-import datatypes
+from src import datatypes
 
 
 class Kalman_2D(datatypes.RobotGUI):
