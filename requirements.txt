@@ -2,3 +2,6 @@ matplotlib
 numpy
 pygame
 pygame-menu
+pyqt5
+scipy
+screeninfo
