@@ -3,6 +3,7 @@ import random
 import matplotlib.backends.backend_qt5agg as agg
 
 import math
+import numpy as np
 
 
 
@@ -45,7 +46,7 @@ def get_dpi():
 
 def Gaussian(mu, sigma, x):
     # calculates the probability of x for 1-dim Gaussian with mean mu and var. sigma
-    return math.exp(- ((mu - x) ** 2) / (sigma ** 2) / 2.0) / math.sqrt(2.0 * math.pi * (sigma ** 2))
+    return np.exp(- ((mu - x) ** 2) / (sigma ** 2) / 2.0) / math.sqrt(2.0 * math.pi * (sigma ** 2))
 
 
 def resample(weights, particles, N, robotclass):

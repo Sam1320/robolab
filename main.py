@@ -5,13 +5,20 @@ import pygame_menu
 
 import datatypes
 import env
+import kalman_filter_1d
 import kalman_filter_2d
 import motion_planning
 import particle_filter
 
 #TODO:
 # improve buttons positions
-# add explanation window
+# implement start_the_game() in base class GameMenu
+
+# DONE add explanation window
+
+#Ideas:
+# Add "about" section in main window explaining the motivation and some details of the gui
+# Add option to automatically perform measurement update when moving (kalman filter 2d)
 
 
 class GameMenu(pygame_menu.Menu):
@@ -147,26 +154,113 @@ class ParticleMenu(GameMenu):
         pygame.display.set_mode((600, 400))
 
 
-class KalmanFilterMenu(GameMenu):
+class KalmanFilter2DMenu(GameMenu):
     def __init__(self, name, surface, width=600, height=400, theme=pygame_menu.themes.THEME_SOLARIZED):
         super().__init__(name, surface, width, height, theme=theme)
+        self.initial_uncertainty = 'big'
+        self.step_size = 1
+        self.motion_noise = 1
         self.sense_noise = 5
 
     def start_the_game(self):
-        self.gui = kalman_filter_2d.Kalman_2D()
+        self.gui = kalman_filter_2d.Kalman_2D(motion_sigma=self.motion_noise, measurement_sigma=self.sense_noise,
+                                              stepsize=self.step_size, initial_uncertainty=self.initial_uncertainty)
         self.gui.start()
         pygame.display.set_mode((600, 400))
+
+    def controls(self):
+        menu = pygame_menu.Menu('Kalman Filter 2D Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        table = menu.add.table()
+        table.add_row(['Up arrow', 'Move up'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Right arrow', 'Move right'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Down arrow', 'Move down'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Left arrow', 'Move left'], cell_padding=8, cell_font_size=20)
+        table.add_row(['S', 'Sense environment'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Escape', 'Exit game'], cell_padding=8, cell_font_size=20)
+        menu.add.button('Back', menu.close)
+        menu.mainloop(self.surface)
+
+    def settings(self):
+        menu = pygame_menu.Menu('Kalman Filter 2D Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        menu.add.vertical_margin(25)
+        menu.add.selector('Initial uncertainty:', [('small', 0), ('medium', 1), ('big', 2)],  default=2, onchange=self.set_init_uncertainty)
+        menu.add.range_slider('Sense noise:', default=self.sense_noise, range_values=(0, 50), increment=1, onchange=self.set_sense_noise)
+        menu.add.range_slider('Motion noise:', default=self.motion_noise, range_values=(0, 10), increment=1, onchange=self.set_motion_noise)
+        menu.add.range_slider('Step size:', default=self.step_size, range_values=(1, 10), increment=1, onchange=self.set_step_size)
+        menu.add.button('Back', menu.close)
+        menu.mainloop(self.surface)
+
+    def set_init_uncertainty(self, value, num):
+        self.initial_uncertainty = value[0][0]
+
+    def set_step_size(self, value):
+        self.step_size = value
+
+    def set_motion_noise(self, value):
+        self.motion_noise = value
+
+    def set_sense_noise(self, value):
+        self.sense_noise = value
+
+
+class KalmanFilter1DMenu(GameMenu):
+    def __init__(self, name, surface, width=600, height=400, theme=pygame_menu.themes.THEME_SOLARIZED):
+        super().__init__(name, surface, width, height, theme=theme)
+        self.initial_uncertainty = 'big'
+        self.step_size = 1
+        self.motion_noise = 1
+        self.sense_noise = 5
+
+    def start_the_game(self):
+        self.gui = kalman_filter_1d.Kalman_1D(motion_sigma=self.motion_noise, measurement_sigma=self.sense_noise,
+                                              stepsize=self.step_size, initial_uncertainty=self.initial_uncertainty)
+        self.gui.start()
+        pygame.display.set_mode((600, 400))
+
+    def controls(self):
+        menu = pygame_menu.Menu('Kalman Filter 1D Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        table = menu.add.table()
+        table.add_row(['Right arrow', 'Move right'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Left arrow', 'Move left'], cell_padding=8, cell_font_size=20)
+        table.add_row(['S', 'Sense environment'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Escape', 'Exit game'], cell_padding=8, cell_font_size=20)
+        menu.add.button('Back', menu.close)
+        menu.mainloop(self.surface)
+
+    def settings(self):
+        menu = pygame_menu.Menu('Kalman Filter 1D Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        menu.add.vertical_margin(25)
+        menu.add.selector('Initial uncertainty:', [('small', 0), ('medium', 1), ('big', 2)],  default=2, onchange=self.set_init_uncertainty)
+        menu.add.range_slider('Sense noise:', default=self.sense_noise, range_values=(0, 50), increment=1, onchange=self.set_sense_noise)
+        menu.add.range_slider('Motion noise:', default=self.motion_noise, range_values=(0, 10), increment=1, onchange=self.set_motion_noise)
+        menu.add.range_slider('Step size:', default=self.step_size, range_values=(1, 10), increment=1, onchange=self.set_step_size)
+        menu.add.button('Back', menu.close)
+        menu.mainloop(self.surface)
+
+    def set_init_uncertainty(self, value, num):
+        self.initial_uncertainty = value[0][0]
+
+    def set_step_size(self, value):
+        self.step_size = value
+
+    def set_motion_noise(self, value):
+        self.motion_noise = value
+
+    def set_sense_noise(self, value):
+        self.sense_noise = value
+
 
 class MainGUI():
     def __init__(self):
         pygame.init()
         self.surface = pygame.display.set_mode((600, 400))
+        pygame.display.set_caption('')
         self.game = None
         self.menu = pygame_menu.Menu('RoboLab', 600, 400,
                                 theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.EXIT)
         self.image = None
         self.menu.add.text_input('Name :', default='UserName')
-        self.menu.add.selector('Game :', [('Particle Filter', 1), ('Kalman Filter', 2), ('A*', 3)], default=0, onchange=self.set_game)
+        self.menu.add.selector('Game :', [('Particle Filter', 1), ('Kalman Filter 1D', 2), ('Kalman Filter 2D', 2), ('A*', 3)], default=0, onchange=self.set_game)
         self.image = self.menu.add.image(os.path.join(env.images_path, 'spaceship.png'), scale=(0.25,0.25))
         self.menu.add.button('Next', self.start_the_game)
         self.menu.add.button('Quit', pygame_menu.events.EXIT)
@@ -182,7 +276,7 @@ class MainGUI():
                 img_name = 'spaceship.png'
             case 'A*':
                 img_name = 'flag.png'
-            case 'Kalman Filter':
+            case 'Kalman Filter 2D' | 'Kalman Filter 1D':
                 img_name = 'robot2.png'
         image = pygame_menu.baseimage.BaseImage(os.path.join(env.images_path, img_name))
         image = image.scale(0.25, 0.25)
@@ -196,8 +290,10 @@ class MainGUI():
                 self.menu = AStarMenu('A*', self.surface)
             case 'Particle Filter':
                 self.menu = ParticleMenu('Particle Filter', self.surface)
-            case 'Kalman Filter':
-                self.menu = KalmanFilterMenu('Kalman Filter', self.surface)
+            case 'Kalman Filter 2D':
+                self.menu = KalmanFilter2DMenu('Kalman Filter 2D', self.surface)
+            case 'Kalman Filter 1D':
+                self.menu = KalmanFilter1DMenu('Kalman Filter 1D', self.surface)
         self.menu.start()
         self.surface = pygame.display.set_mode((600, 400))
 

@@ -14,7 +14,7 @@ import datatypes
 
 
 class Kalman_2D(datatypes.RobotGUI):
-    def __init__(self, screen_width=1000, stepsize=1, motion_sigma=1, measurement_sigma=10.):
+    def __init__(self, screen_width=1000, stepsize=1, motion_sigma=1, measurement_sigma=10., initial_uncertainty='big'):
         super().__init__(screen_width=screen_width, height_width_ratio=2/3)
         self.step_size = stepsize
         self.cell_width = self.robot_size*1.2
@@ -24,7 +24,14 @@ class Kalman_2D(datatypes.RobotGUI):
         robot_y = 50
         mu = [robot_x, robot_y]
         # start with big uncertainty
-        sigma = [[self.world_size[0] * 10, 0], [0, self.world_size[1] * 10]]
+        match initial_uncertainty:
+            case 'small':
+                uncertainty_scale  = 1e0
+            case 'medium':
+                uncertainty_scale = 1e1
+            case 'big':
+                uncertainty_scale = 1e5
+        sigma = [[self.world_size[0] * uncertainty_scale, 0], [0, self.world_size[1] * uncertainty_scale]]
         measurement_sigma = [[measurement_sigma, 0], [0., measurement_sigma]]
         self.robot = datatypes.RobotKalman2D(mu, sigma, motion_uncertainty=motion_sigma,
                                    measurement_uncertainty=measurement_sigma, size=self.robot_size)
@@ -59,18 +66,20 @@ class Kalman_2D(datatypes.RobotGUI):
                     motion = (0, -1 * self.step_size)
                 elif event.key == pg.K_UP:
                     motion = (0, 1 * self.step_size)
+                elif event.key == pg.K_ESCAPE:
+                    return 1
                 else:
                     motion = None
                 if motion:
                     self.motion = motion
                     self.moving = True
-                if event.key == pg.K_m:
+                if event.key == pg.K_s:
                     self.robot.sense()
-
             elif event.type == pg.KEYUP:
                 self.moving = False
         if self.moving:
             self.robot.move(self.motion)
+        return 0
 
     def draw(self):
         gauss = self.plot2surface(self.robot.mu, self.robot.sigma)

@@ -13,6 +13,7 @@ import utils
 
 #DONE: get rid of get_dpi() and find better alternative
 
+
 class RobotGrid:
     def __init__(self, world_size=(100, 100)):
         self.x = int(random.random()*world_size[0])
@@ -22,6 +23,28 @@ class RobotGrid:
     def move(self, dx, dy):
         self.x = (self.x+dx) % self.world_size[0]
         self.y = (self.y+dy) % self.world_size[1]
+
+
+class RobotKalman1D():
+    def __init__(self, true_position, position_uncertainty, motion_uncertainty, measurement_uncertainty, size):
+        self.pos = true_position
+        self.mu = true_position
+        self.sigma = position_uncertainty
+        self.measurement_sigma = measurement_uncertainty
+        self.motion_sigma = motion_uncertainty
+        self.size = size
+
+    def move(self, motion):
+        # motion update. Predict new position and variance.
+        self.mu += motion
+        self.sigma = np.sqrt(self.sigma**2 + self.motion_sigma**2)
+        self.pos += np.random.normal(motion, self.motion_sigma)
+
+    def sense(self):
+        measurement = np.random.normal(self.pos, self.measurement_sigma, 1)[0]
+        self.mu = (self.mu*(self.measurement_sigma**2) + measurement*self.sigma**2)/ (self.sigma**2+self.measurement_sigma**2)
+        self.sigma = np.sqrt(1/(1/self.sigma**2 + 1/self.measurement_sigma**2))
+
 
 class RobotKalman2D():
     def __init__(self, true_position, position_uncertainty, motion_uncertainty, measurement_uncertainty, size):
@@ -49,6 +72,7 @@ class RobotKalman2D():
         self.mu[1] = (self.mu[1]*(self.measurement_sigma[1][1]**2) + measurement[1]*self.sigma[1][1]**2)/ (self.sigma[1][1]**2+self.measurement_sigma[1][1]**2)
         self.sigma[0][0] = np.sqrt(1/(1/self.sigma[0][0]**2 + 1/self.measurement_sigma[0][0]**2))
         self.sigma[1][1] = np.sqrt(1/(1/self.sigma[1][1]**2 + 1/self.measurement_sigma[0][0]**2))
+
 
 class RobotParticle:
     def __init__(self, world_size=(100, 100), state=None, forward_noise=0, turning_noise=0, sense_noise=0, image=None):
