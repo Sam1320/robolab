@@ -129,6 +129,7 @@ def search(grid, init, goal, heuristic, cost=1):
 
     while cur_min > 0:
         row, col = cur
+        min_n = None
         for i in range(len(moves)):
             new_row = row + moves[i][0]
             new_col = col + moves[i][1]
@@ -136,6 +137,8 @@ def search(grid, init, goal, heuristic, cost=1):
                 if expand[new_row][new_col] < cur_min:
                     cur_min = expand[new_row][new_col]
                     min_n = [new_row, new_col]
+        if not min_n:
+            break
         diff_row = row-min_n[0]
         diff_col = col-min_n[1]
         for move_idx, move in enumerate(moves):

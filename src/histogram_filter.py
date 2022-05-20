@@ -1,9 +1,13 @@
+import os.path
+
 import pygame as pg
 import sys
 import random
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
+
+import env
 from utils import *
 
 black = (0, 0, 0)
@@ -118,7 +122,7 @@ def main():
 
 def drawgrid():
     global probs
-    robot = pg.image.load('robot1.png')
+    robot = pg.image.load(os.path.join(env.images_path, 'robot1.png'))
     robot = pg.transform.smoothscale(robot, (robot_size, robot_size))
 
     for i, y in enumerate(range(0, win_height, cell_height)):

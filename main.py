@@ -62,7 +62,7 @@ class AStarMenu(GameMenu):
     def controls(self):
         menu = pygame_menu.Menu('A* Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         table = menu.add.table()
-        table.add_row(['Left click', 'set star position'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Left click', 'set start position'], cell_padding=8, cell_font_size=20)
         table.add_row(['Right click', 'set goal position'], cell_padding=8, cell_font_size=20)
         table.add_row(['Middle click', 'modify map'], cell_padding=8, cell_font_size=20)
         table.add_row(['Escape', 'Exit game'], cell_padding=8, cell_font_size=20)
@@ -77,7 +77,7 @@ class AStarMenu(GameMenu):
         menu.add.range_slider('Obstacle Probability:', default=self.obstacle_prob, range_values=[0, 0.2, 0.4, 0.6, 0.8, 1], onchange=self.set_obstacle_prob)
         menu.add.range_slider('Grid Width :', default=self.width, range_values=list(range(10, 51, 10)), onchange=self.set_width)
         menu.add.range_slider('Grid Height :', default=self.height, range_values=list(range(10, 51, 10)), onchange=self.set_height)
-        menu.add.button('Back', menu.close)
+        menu.add.button('Save', menu.close)
         menu.mainloop(self.surface)
 
     def set_obstacle_prob(self, value):
@@ -126,11 +126,11 @@ class ParticleMenu(GameMenu):
         menu = pygame_menu.Menu('Particle Filter Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         menu.add.vertical_margin(25)
         menu.add.range_slider('Number of Particles:', default=self.number_of_particles, range_values=[10, 100, 200, 400, 800], onchange=self.set_number_of_particles)
-        menu.add.range_slider('Number of Planets:', default=2, range_values=(1, 7), increment=1, onchange=self.set_number_of_particles)
+        menu.add.range_slider('Number of Celestial Bodies:', default=3, range_values=(1, 7), increment=1, onchange=self.set_number_of_planets)
         menu.add.range_slider('Forward noise:', default=self.forward_noise, range_values=(0, 5),increment=0.05, onchange=self.set_forward_noise)
         menu.add.range_slider('Turing noise:', default=self.turning_noise, range_values=(0, 5),increment=0.05, onchange=self.set_turning_noise)
         menu.add.range_slider('Sense noise:', default=self.sense_noise, range_values=(0, 20),increment=1, onchange=self.set_sense_noise)
-        menu.add.button('Back', menu.close)
+        menu.add.button('Save', menu.close)
         menu.mainloop(self.surface)
 
     def set_sense_noise(self, value):
@@ -145,11 +145,15 @@ class ParticleMenu(GameMenu):
     def set_number_of_particles(self, value):
         self.number_of_particles = value
 
+    def set_number_of_planets(self, value):
+        self.number_of_planets = value
+
     def start_the_game(self):
         self.gui = particle_filter.ParticleFilterGUI(n_particles=self.number_of_particles,
                                                      forward_noise=self.forward_noise,
                                                      turning_noise=self.turning_noise,
-                                                     sense_noise=self.sense_noise)
+                                                     sense_noise=self.sense_noise,
+                                                     n_planets=self.number_of_planets)
         self.gui.start()
         pygame.display.set_mode((600, 400))
 
@@ -187,7 +191,7 @@ class KalmanFilter2DMenu(GameMenu):
         menu.add.range_slider('Sense noise:', default=self.sense_noise, range_values=(0, 50), increment=1, onchange=self.set_sense_noise)
         menu.add.range_slider('Motion noise:', default=self.motion_noise, range_values=(0, 10), increment=1, onchange=self.set_motion_noise)
         menu.add.range_slider('Step size:', default=self.step_size, range_values=(1, 10), increment=1, onchange=self.set_step_size)
-        menu.add.button('Back', menu.close)
+        menu.add.button('Save', menu.close)
         menu.mainloop(self.surface)
 
     def set_init_uncertainty(self, value, num):
@@ -234,7 +238,7 @@ class KalmanFilter1DMenu(GameMenu):
         menu.add.range_slider('Sense noise:', default=self.sense_noise, range_values=(0, 50), increment=1, onchange=self.set_sense_noise)
         menu.add.range_slider('Motion noise:', default=self.motion_noise, range_values=(0, 10), increment=1, onchange=self.set_motion_noise)
         menu.add.range_slider('Step size:', default=self.step_size, range_values=(1, 10), increment=1, onchange=self.set_step_size)
-        menu.add.button('Back', menu.close)
+        menu.add.button('Save', menu.close)
         menu.mainloop(self.surface)
 
     def set_init_uncertainty(self, value, num):

@@ -31,13 +31,13 @@ LINEAR_STEP = 0.3
 
 
 class ParticleFilterGUI(RobotGUI):
-    def __init__(self, n_particles, forward_noise, turning_noise, sense_noise):
+    def __init__(self, n_particles, forward_noise, turning_noise, sense_noise, n_planets):
         super().__init__(screen_width=1000, height_width_ratio=1/2, robot_img="spaceship")
         self.n_particles = n_particles
+        self.n_planets = n_planets
         self.particles = [RobotParticle(world_size=self.world_size, forward_noise=forward_noise, turning_noise=turning_noise, sense_noise=sense_noise)
                           for _ in range(self.n_particles)]
         self.moving = False
-
 
         fig = plt.figure(figsize=self.figsize)
         ax = fig.add_axes([0, 0, 1, 1])
@@ -61,7 +61,7 @@ class ParticleFilterGUI(RobotGUI):
                  'file': 'mars.png',
                  'size': self.robot_size * 1.5}
         }
-        self.landmarks_pos = [l['pos'] for l in self.landmarks.values()]
+        self.landmarks_pos = [l['pos'] for l in list(self.landmarks.values())[:self.n_planets]]
         self.landmarks_imgs = []
 
     def init_pygame(self):
@@ -70,7 +70,7 @@ class ParticleFilterGUI(RobotGUI):
         robot_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, f'{self.robot_img}.png')).convert_alpha(), (self.robot_size, self.robot_size))
         robot_img = pg.transform.rotozoom(robot_img, -90, 1)
         self.robot = RobotParticle(world_size=self.world_size, image=robot_img) if self.robot_type == 'diff' else None
-        for landmark in self.landmarks.values():
+        for landmark in list(self.landmarks.values())[:self.n_planets]:
             file = landmark['file']
             size = landmark['size']
             self.landmarks_imgs.append(pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, file)).convert_alpha(), (size, size)))
