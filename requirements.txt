@@ -1,7 +1,7 @@
-matplotlib
-numpy
-pygame
-pygame-menu
-pyqt5
-scipy
-screeninfo
+matplotlib==3.5.1
+numpy==1.21.2
+pygame==2.1.2
+pygame-menu==4.2.8
+pyqt5==5.15.6
+scipy==1.7.3
+screeninfo==0.8

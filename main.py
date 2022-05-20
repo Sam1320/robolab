@@ -127,9 +127,9 @@ class ParticleMenu(GameMenu):
         menu.add.vertical_margin(25)
         menu.add.range_slider('Number of Particles:', default=self.number_of_particles, range_values=[10, 100, 200, 400, 800], onchange=self.set_number_of_particles)
         menu.add.range_slider('Number of Celestial Bodies:', default=3, range_values=(1, 7), increment=1, onchange=self.set_number_of_planets)
-        menu.add.range_slider('Forward noise:', default=self.forward_noise, range_values=(0, 5),increment=0.05, onchange=self.set_forward_noise)
-        menu.add.range_slider('Turing noise:', default=self.turning_noise, range_values=(0, 5),increment=0.05, onchange=self.set_turning_noise)
-        menu.add.range_slider('Sense noise:', default=self.sense_noise, range_values=(0, 20),increment=1, onchange=self.set_sense_noise)
+        menu.add.range_slider('Forward noise:', default=self.forward_noise, range_values=(0, 5), increment=0.05, onchange=self.set_forward_noise)
+        menu.add.range_slider('Turing noise:', default=self.turning_noise, range_values=(0, 5), increment=0.05, onchange=self.set_turning_noise)
+        menu.add.range_slider('Sense noise:', default=self.sense_noise, range_values=(0, 20), increment=1, onchange=self.set_sense_noise)
         menu.add.button('Save', menu.close)
         menu.mainloop(self.surface)
 
