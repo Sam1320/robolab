@@ -127,6 +127,7 @@ class ParticleFilterGUI(RobotGUI):
 
     def draw(self):
         plot = self.plot2surface()
+        plot = pg.transform.smoothscale(plot, (self.screen_width, self.screen_height))
         self.screen.blit(plot, (0, 0))
         robotx, roboty = self.robot.get_position()
         robotx_screen, roboty_screen = self.world2screen((robotx, roboty))
