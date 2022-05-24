@@ -75,8 +75,9 @@ def heuristic(position, goal):
     return abs(position[0]-goal[0]) + abs(position[1]-goal[1])
 
 
-def search(grid, init, goal, heuristic, cost=1):
-    """A* implementation. Find best path from init to goal position."""
+def a_star_search(grid, init, goal, heuristic, cost=1):
+    """A* implementation. Find best path from init to goal position.
+    Returns grid with arrows representing the path from start to goal"""
     moves = [[-1, 0 ], [0, -1], [1, 0], [0, 1]]
     moves_char = ['^', '<', 'v','>']
     closed = [[0 for col in range(len(grid[0]))] for row in range(len(grid))]
@@ -147,5 +148,59 @@ def search(grid, init, goal, heuristic, cost=1):
         cur = min_n
     if resign:
         result[min_f_pos[0]][min_f_pos[1]] = '!'
+    return result
+
+
+def dynamic_programming_search(grid, goal, cost=1):
+    """Dynamic Programming implementation. Find best path from all positions to goal position.
+    Returns grid with arrows representing path from each position to goal"""
+    moves = [[-1, 0 ], [0, -1], [1, 0], [0, 1]]
+    moves_char = ['^', '<', 'v','>']
+    value = [[99 for row in range(len(grid[0]))] for col in range(len(grid))]
+    result = [[' ' for col in range(len(grid[0]))] for row in range(len(grid))]
+
+    change = True
+
+    while change:
+        change = False
+        for x in range(len(grid)):
+            for y in range(len(grid[0])):
+                if goal[0] == x and goal[1] == y:
+                    if value[x][y] > 0:
+                        value[x][y] = 0
+                        change = True
+
+                elif grid[x][y] == 0:
+                    for a in range(len(moves)):
+                        x2 = x + moves[a][0]
+                        y2 = y + moves[a][1]
+                        if x2 >= 0 and x2 < len(grid) and y2 >= 0 and y2 < len(grid[0]) and grid[x2][y2] == 0:
+                            v2 = value[x2][y2] + cost
+                            if v2 < value[x][y]:
+                                change = True
+                                value[x][y] = v2
+    for row in range(len(grid)):
+        for col in range(len(grid[0])):
+            if value[row][col] == 99:
+                continue
+            min_n = None
+            cur_min = math.inf
+            for i in range(len(moves)):
+                new_row = row + moves[i][0]
+                new_col = col + moves[i][1]
+                if 0 <= new_row < len(grid) and 0 <= new_col < len(grid[0]) and value[new_row][new_col] != 99:
+                    if value[new_row][new_col] < cur_min:
+                        cur_min = value[new_row][new_col]
+                        min_n = [new_row, new_col]
+            if not min_n:
+                break
+            diff_row = min_n[0]-row
+            diff_col = min_n[1]-col
+            for move_idx, move in enumerate(moves):
+                if move == [diff_row, diff_col]:
+                    result[row][col] = moves_char[move_idx]
+    # if resign:
+    #     result[min_f_pos[0]][min_f_pos[1]] = '!'
+    result[goal[0]][goal[1]] = '*'
     return result
 

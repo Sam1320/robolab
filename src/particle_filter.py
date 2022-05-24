@@ -32,7 +32,7 @@ LINEAR_STEP = 0.3
 
 class ParticleFilterGUI(RobotGUI):
     def __init__(self, n_particles, forward_noise, turning_noise, sense_noise, n_planets):
-        super().__init__(screen_width=1000, height_width_ratio=1/2, robot_img="spaceship")
+        super().__init__(screen_width=1000, height_width_ratio=1/2, robot_img="ufo")
         self.n_particles = n_particles
         self.n_planets = n_planets
         self.particles = [RobotParticle(world_size=self.world_size, forward_noise=forward_noise, turning_noise=turning_noise, sense_noise=sense_noise)
@@ -141,5 +141,5 @@ class ParticleFilterGUI(RobotGUI):
 
 
 if __name__ == "__main__":
-    particleGUI = ParticleFilterGUI(10, 0.05, 0.05, 5)
+    particleGUI = ParticleFilterGUI(10, 0.05, 0.05, 5, 2)
     particleGUI.start(verbose=True, fps=30)

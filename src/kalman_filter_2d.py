@@ -39,7 +39,7 @@ class Kalman_2D(datatypes.RobotGUI):
         # Parameters for plottig the gaussian. This only needs to be calculated once.
         fig = plt.figure(figsize=self.figsize)
         ax = fig.add_axes([0, 0, 1, 1])
-        ax.grid(c='k', ls='-', alpha=0.3)
+        ax.grid_obstacles(c='k', ls='-', alpha=0.3)
         self.fig = fig
         self.ax = ax
         self.x_mesh, self.y_mesh = np.mgrid[0:self.world_size[0]:0.5, self.world_size[1]:0:-0.5]

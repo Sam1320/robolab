@@ -1,5 +1,7 @@
 import os.path
+import pickle
 import sys
+from tkinter import messagebox
 
 import pygame as pg
 import random
@@ -7,11 +9,6 @@ import math
 import numpy as np
 import env
 from src import utils
-
-#TODO:
-# get rid of panels (replaced by a start window for adjusting settings)
-
-#DONE: get rid of get_dpi() and find better alternative
 
 
 class RobotGrid:
@@ -172,3 +169,116 @@ class RobotGUI:
         new_y = self.screen_height*y_norm
         new_x = self.screen_width*x_norm
         return new_x, new_y
+
+
+class GridGUI(RobotGUI):
+    def __init__(self, world_size=(10, 6), load_grid=False, obstacle_prob=0.2):
+        self.world_size = world_size
+        if load_grid:
+            with open('grid.pickle', 'rb') as file:
+                self.grid_obstacles = pickle.load(file)
+                self.world_size = len(self.grid_obstacles[0]), len(self.grid_obstacles)
+        else:
+            self.grid_obstacles = [[1 if random.random() < obstacle_prob else 0 for row in range(self.world_size[0])] for col in range(self.world_size[1])]
+        # as the grid gets bigger the cells get smaller
+        self.scale = int((1/(world_size[0]+world_size[1]))*1200)
+        self.window_width = self.scale * self.world_size[0]
+        self.window_height = self.scale * self.world_size[1]
+        self.grid_colors = {'free': (200, 200, 200), 'obstacle': (50, 50, 50)}
+
+        self.goal = None
+        self.start_pos = None
+        self.cell_size = self.scale
+        self.outline_thickness = 1
+        self.grid_state = [[' ' for col in range(self.world_size[0])] for row in range(self.world_size[1])]
+
+    def init_pygame(self):
+        img_size = self.scale/2
+        self.screen = pg.display.set_mode((self.window_width, self.window_height), pg.DOUBLEBUF)
+        self.screen.fill('black')
+        arrow_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'arrow.png')), (img_size, img_size))
+        goal_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'flag.png')), (img_size, img_size))
+        start_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'robot2.png')), (img_size, img_size))
+        exclamation_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'exclamation.png')), (img_size, img_size))
+        self.images = {
+            '^': pg.transform.rotozoom(arrow_img, 90, 1),
+            '>': pg.transform.rotozoom(arrow_img, 0, 1),
+            'v': pg.transform.rotozoom(arrow_img, -90, 1),
+            '<': pg.transform.rotozoom(arrow_img, 180, 1),
+            '*': goal_img,
+            '!': exclamation_img,
+            'start': start_img
+        }
+
+    def draw(self):
+        for row, y in enumerate(range(0, self.window_height, self.cell_size)):
+            for col, x in enumerate(range(0, self.window_width, self.cell_size)):
+                rect = pg.Rect(x + self.outline_thickness, y + self.outline_thickness, self.cell_size - self.outline_thickness,
+                               self.cell_size - self.outline_thickness)
+                #TODO: encode obstacles inside grid state
+                cell_color = self.grid_colors['obstacle'] if self.grid_obstacles[row][col] else self.grid_colors['free']
+                pg.draw.rect(self.screen, cell_color, rect, 0)
+                policy = self.grid_state[row][col]
+                if self.start_pos == [row, col]:
+                    self.screen.blit(self.images['start'], (x + self.cell_size / 4, y + self.cell_size / 4))
+                if policy != ' ':
+                    self.screen.blit(self.images[policy], (x + self.cell_size / 4, y + self.cell_size / 4))
+
+    def handle_events(self):
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                return 1
+            elif event.type == pg.MOUSEBUTTONUP:
+                state = event.button
+                match state:
+                    case 1:
+                        self.handle_left_click()
+                    case 2:
+                        self.handle_middle_click()
+                    case 3:
+                        self.handle_right_click()
+                self.update_grid_state()
+            elif event.type == pg.KEYDOWN:
+                if event.key == pg.K_RETURN:
+                    self.handle_enter()
+                elif event.key == pg.K_ESCAPE:
+                    return 1
+        return 0
+
+    def handle_enter(self):
+        messagebox.showinfo(title='Info', message='Map saved')
+        with open('grid.pickle', 'wb') as file:
+            pickle.dump(self.grid_obstacles, file)
+
+    def update_grid_state(self):
+        pass
+
+    def handle_left_click(self):
+        pass
+
+    def handle_middle_click(self):
+        pos = pg.mouse.get_pos()
+        obstacle = list(self.coords_to_row_col(pos[0], pos[1]))
+        self.grid_obstacles[obstacle[0]][obstacle[1]] = (self.grid_obstacles[obstacle[0]][obstacle[1]] + 1) % 2
+
+    def handle_right_click(self):
+        pos = pg.mouse.get_pos()
+        if self.goal:
+            self.grid_state[self.goal[0]][self.goal[1]] = ' '
+        self.goal = list(self.coords_to_row_col(pos[0], pos[1]))
+        self.grid_state[self.goal[0]][self.goal[1]] = '*'
+
+    def coords_to_row_col(self, x, y):
+        """Converts x y coordinates to col and row numbers."""
+        row, col = None, None
+        for i in range(self.world_size[1]):
+            if y < self.cell_size*(i+1):
+                row = i
+                break
+        for i in range(self.world_size[0]):
+            if x < self.cell_size*(i+1):
+                col = i
+                break
+        if row is None or col is None:
+            raise Exception('Bad click coordinate')
+        return row, col
