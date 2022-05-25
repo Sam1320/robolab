@@ -75,15 +75,50 @@ def heuristic(position, goal):
     return abs(position[0]-goal[0]) + abs(position[1]-goal[1])
 
 
-def a_star_search(grid, init, goal, heuristic, cost=1):
+def a_star_search(grid, init, goal, heuristic, cost=1, return_path_coords=False):
     """A* implementation. Find best path from init to goal position.
     Returns grid with arrows representing the path from start to goal"""
-    moves = [[-1, 0 ], [0, -1], [1, 0], [0, 1]]
+    moves = [[-1, 0], [0, -1], [1, 0], [0, 1]]
     moves_char = ['^', '<', 'v','>']
+    result = [[' ' for col in range(len(grid[0]))] for row in range(len(grid))]
+    path_coords = []
+    expand, resign, min_f_pos = get_expansion_grid(grid, init, goal, heuristic, cost=1)
+    cur_min = math.inf
+    cur = goal if not resign else min_f_pos
+    result[goal[0]][goal[1]] = '*'
+    while cur_min > 0:
+        row, col = cur
+        min_n = None
+        for i in range(len(moves)):
+            new_row = row + moves[i][0]
+            new_col = col + moves[i][1]
+            if 0 <= new_row < len(grid) and 0 <= new_col < len(grid[0]) and expand[new_row][new_col] != -1:
+                if expand[new_row][new_col] < cur_min:
+                    cur_min = expand[new_row][new_col]
+                    min_n = [new_row, new_col]
+        if not min_n:
+            break
+        diff_row = row-min_n[0]
+        diff_col = col-min_n[1]
+        for move_idx, move in enumerate(moves):
+            if move == [diff_row, diff_col]:
+                result[min_n[0]][min_n[1]] = moves_char[move_idx]
+                if return_path_coords:
+                    path_coords.append(min_n)
+        cur = min_n
+    if resign:
+        result[min_f_pos[0]][min_f_pos[1]] = '!'
+    if return_path_coords:
+        path_coords = path_coords.reverse()
+        return result, path_coords
+    return result
+
+
+def get_expansion_grid(grid, init, goal, heuristic, cost=1):
+    moves = [[-1, 0], [0, -1], [1, 0], [0, 1]]
     closed = [[0 for col in range(len(grid[0]))] for row in range(len(grid))]
     closed[init[0]][init[1]] = 1
     expand = [[-1 for col in range(len(grid[0]))] for row in range(len(grid))]
-    result = [[' ' for col in range(len(grid[0]))] for row in range(len(grid))]
     row, col = init
     g = 0
     f = heuristic(init, goal)
@@ -124,31 +159,7 @@ def a_star_search(grid, init, goal, heuristic, cost=1):
                                 min_f_pos = [new_row, new_col]
                             open.append([h2, g2, new_row, new_col])
                             closed[new_row][new_col] = 1
-    cur_min = math.inf
-    cur = goal if not resign else min_f_pos
-    result[goal[0]][goal[1]] = '*'
-
-    while cur_min > 0:
-        row, col = cur
-        min_n = None
-        for i in range(len(moves)):
-            new_row = row + moves[i][0]
-            new_col = col + moves[i][1]
-            if 0 <= new_row < len(grid) and 0 <= new_col < len(grid[0]) and expand[new_row][new_col] != -1:
-                if expand[new_row][new_col] < cur_min:
-                    cur_min = expand[new_row][new_col]
-                    min_n = [new_row, new_col]
-        if not min_n:
-            break
-        diff_row = row-min_n[0]
-        diff_col = col-min_n[1]
-        for move_idx, move in enumerate(moves):
-            if move == [diff_row, diff_col]:
-                result[min_n[0]][min_n[1]] = moves_char[move_idx]
-        cur = min_n
-    if resign:
-        result[min_f_pos[0]][min_f_pos[1]] = '!'
-    return result
+    return expand, resign, min_f_pos
 
 
 def dynamic_programming_search(grid, goal, cost=1):
