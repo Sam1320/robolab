@@ -3,11 +3,8 @@ import os
 import pygame
 import pygame_menu
 
-from src import datatypes
-from src import kalman_filter_1d
-from src import kalman_filter_2d
-from src import a_star, dymamic_programming
-from src import particle_filter
+
+from src import datatypes, kalman_filter_1d, kalman_filter_2d, a_star, dymamic_programming, particle_filter, optimum_policy
 import env
 
 
@@ -65,8 +62,8 @@ class GridMenu(GameMenu):
         menu = pygame_menu.Menu(f'{self.name} Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         menu.add.toggle_switch('Load Map', default=self.load_map, onchange=self.set_map_load)
         menu.add.range_slider('Obstacle Probability:', default=self.obstacle_prob, range_values=[0, 0.2, 0.4, 0.6, 0.8, 1], onchange=self.set_obstacle_prob)
-        menu.add.range_slider('Grid Width :', default=self.width, range_values=list(range(10, 51, 10)), onchange=self.set_width)
-        menu.add.range_slider('Grid Height :', default=self.height, range_values=list(range(10, 51, 10)), onchange=self.set_height)
+        menu.add.range_slider('Grid Width :', default=self.width, range_values=(1, 50), increment=1, onchange=self.set_width)
+        menu.add.range_slider('Grid Height :', default=self.height, range_values=(1, 50), increment=1, onchange=self.set_height)
         menu.add.button('Save', menu.close)
         menu.mainloop(self.surface)
 
@@ -105,6 +102,67 @@ class AStarMenu(GridMenu):
 
     def start_the_game(self):
         self.gui = a_star.AStartGUI(world_size=(self.width, self.height), load_grid=self.load_map, obstacle_prob=self.obstacle_prob)
+        self.gui.start()
+        pygame.display.set_mode((600, 400))
+
+
+class OptimumPolicyMenu(GridMenu):
+    def __init__(self, name, surface, width=600, height=400):
+        super().__init__(name, surface, width, height)
+        self.move_right_cost = 1
+        self.move_left_cost = 1
+        self.move_forward_cost = 1
+        self.init_orientation = 0
+
+
+    def controls(self):
+        menu = pygame_menu.Menu(f'{self.name} Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        table = menu.add.table()
+        table.add_row(['Left click', 'set start position'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Right click', 'set goal position'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Middle click', 'modify map'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Escape', 'Exit game'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Enter', 'save map'], cell_padding=8, cell_font_size=20)
+        menu.add.button('Back', menu.close)
+        menu.mainloop(self.surface)
+
+    def settings(self):
+        menu = pygame_menu.Menu(f'{self.name} Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        menu.add.toggle_switch('Load Map', default=self.load_map, onchange=self.set_map_load)
+        menu.add.selector('Initial Orientation', [('UP', 0), ('LEFT', 1), ('DOWN', 2), ('RIGHT', 3)],
+                          default=self.init_orientation, onchange=self.set_init_orientation)
+        menu.add.range_slider('Move Left Cost', default=self.move_left_cost,
+                              range_values=(1, 20), increment=1, onchange=self.set_move_left_cost)
+        menu.add.range_slider('Move Forward Cost', default=self.move_forward_cost,
+                              range_values=(1, 20), increment=1, onchange=self.set_move_forward_cost)
+        menu.add.range_slider('Move Right Cost', default=self.move_right_cost,
+                              range_values=(1, 20), increment=1, onchange=self.set_move_right_cost)
+        menu.add.range_slider('Obstacle Probability:', default=self.obstacle_prob,
+                              range_values=[0, 0.2, 0.4, 0.6, 0.8, 1], onchange=self.set_obstacle_prob)
+        menu.add.range_slider('Grid Width :', default=self.width,
+                              range_values=(1, 50), increment=1, onchange=self.set_width)
+        menu.add.range_slider('Grid Height :', default=self.height,
+                              range_values=(1, 50), increment=1, onchange=self.set_height)
+        menu.add.button('Save', menu.close)
+        menu.mainloop(self.surface)
+
+    def set_init_orientation(self, value, num):
+        self.init_orientation = num
+
+    def set_move_right_cost(self, value):
+        self.move_right_cost = value
+
+    def set_move_left_cost(self, value):
+        self.move_left_cost = value
+
+    def set_move_forward_cost(self, value):
+        self.move_forward_cost = value
+
+    def start_the_game(self):
+        costs = [self.move_right_cost, self.move_forward_cost, self.move_left_cost]
+        self.gui = optimum_policy.OptimumPolicyGUI(world_size=(self.width, self.height), load_grid=self.load_map,
+                                                   obstacle_prob=self.obstacle_prob, costs=costs,
+                                                   init_orientation=self.init_orientation)
         self.gui.start()
         pygame.display.set_mode((600, 400))
 

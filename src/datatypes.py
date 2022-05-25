@@ -123,7 +123,7 @@ class RobotParticle:
 
 
 class RobotGUI:
-    def __init__(self, robot_type='diff', robot_img='robot_ship', screen_width=1500, height_width_ratio=2/3):
+    def __init__(self, robot_type='diff', robot_img='robot_ship', screen_width=1500, height_width_ratio=2/3, plot=True):
         self.height_width_ratio = height_width_ratio
         self.screen_width = screen_width
         self.screen_height = int(screen_width*self.height_width_ratio)
@@ -134,9 +134,10 @@ class RobotGUI:
         self.robot_img = robot_img
         self.robot_type = robot_type
 
-        # plot stuff
-        self.dpi = utils.get_dpi()
-        self.figsize = (int(self.screen_width / self.dpi), int(self.screen_height / self.dpi))
+        if plot:
+            # plot stuff
+            self.dpi = utils.get_dpi()
+            self.figsize = (int(self.screen_width / self.dpi), int(self.screen_height / self.dpi))
 
     def init_pygame(self):
         """ Initialize display, transform and load images."""
@@ -155,7 +156,6 @@ class RobotGUI:
             if end_game:
                 return 1
 
-
     def draw(self):
         pass
 
@@ -172,7 +172,9 @@ class RobotGUI:
 
 
 class GridGUI(RobotGUI):
-    def __init__(self, world_size=(10, 6), load_grid=False, obstacle_prob=0.2):
+    #TODO: refactor robotgui class and use super().__init__
+    def __init__(self, world_size=(10, 6), load_grid=False, obstacle_prob=0.2, robot_img='robot2.png'):
+        self.robot_img = robot_img
         self.world_size = world_size
         if load_grid:
             with open('grid.pickle', 'rb') as file:
@@ -185,7 +187,7 @@ class GridGUI(RobotGUI):
         self.window_width = self.scale * self.world_size[0]
         self.window_height = self.scale * self.world_size[1]
         self.grid_colors = {'free': (200, 200, 200), 'obstacle': (50, 50, 50)}
-
+        self.image_rotation = 0
         self.goal = None
         self.start_pos = None
         self.cell_size = self.scale
@@ -198,7 +200,7 @@ class GridGUI(RobotGUI):
         self.screen.fill('black')
         arrow_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'arrow.png')), (img_size, img_size))
         goal_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'flag.png')), (img_size, img_size))
-        start_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'robot2.png')), (img_size, img_size))
+        start_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, self.robot_img)), (img_size, img_size))
         exclamation_img = pg.transform.smoothscale(pg.image.load(os.path.join(env.images_path, 'exclamation.png')), (img_size, img_size))
         self.images = {
             '^': pg.transform.rotozoom(arrow_img, 90, 1),
@@ -207,7 +209,7 @@ class GridGUI(RobotGUI):
             '<': pg.transform.rotozoom(arrow_img, 180, 1),
             '*': goal_img,
             '!': exclamation_img,
-            'start': start_img
+            'start': pg.transform.rotozoom(start_img, self.image_rotation, 1) if self.image_rotation else start_img
         }
 
     def draw(self):
@@ -219,10 +221,15 @@ class GridGUI(RobotGUI):
                 cell_color = self.grid_colors['obstacle'] if self.grid_obstacles[row][col] else self.grid_colors['free']
                 pg.draw.rect(self.screen, cell_color, rect, 0)
                 policy = self.grid_state[row][col]
-                if self.start_pos == [row, col]:
-                    self.screen.blit(self.images['start'], (x + self.cell_size / 4, y + self.cell_size / 4))
+
                 if policy != ' ':
                     self.screen.blit(self.images[policy], (x + self.cell_size / 4, y + self.cell_size / 4))
+                if not(self.start_pos is None) and self.start_pos[:2]  == [row, col]:
+                    pg.draw.rect(self.screen, cell_color, rect, 0)
+                    self.screen.blit(self.images['start'], (x, y + self.cell_size / 4))
+                    if policy != ' ':
+                        self.screen.blit(self.images[policy], (x + self.cell_size / 2, y + self.cell_size / 4))
+
 
     def handle_events(self):
         for event in pg.event.get():

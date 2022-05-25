@@ -15,7 +15,8 @@ class MainGUI():
         self.menu = pygame_menu.Menu('RoboLab', 600, 400,
                                 theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.EXIT)
         self.image = None
-        self.guis = [('Particle Filter',), ('Kalman Filter 1D',), ('Kalman Filter 2D',), ('A*',), ('Dynamic Programming',)]
+        self.guis = [('Particle Filter',), ('Kalman Filter 1D',), ('Kalman Filter 2D',), ('A*',),
+                     ('Dynamic Programming',), ('Optimum Policy',)]
         self.menu.add.text_input('Name :', default='UserName')
         self.menu.add.selector('Game :', self.guis, default=0, onchange=self.set_game)
         self.image = self.menu.add.image(os.path.join(env.images_path, 'spaceship.png'), scale=(0.25,0.25))
@@ -35,6 +36,8 @@ class MainGUI():
                 img_name = 'flag.png'
             case 'Kalman Filter 2D' | 'Kalman Filter 1D':
                 img_name = 'robot2.png'
+            case 'Optimum Policy':
+                img_name = 'car.png'
         image = pygame_menu.baseimage.BaseImage(os.path.join(env.images_path, img_name))
         image = image.scale(0.25, 0.25)
         if self.image:
@@ -53,6 +56,8 @@ class MainGUI():
                 self.menu = menus.KalmanFilter1DMenu('Kalman Filter 1D', self.surface)
             case 'Dynamic Programming':
                 self.menu = menus.DynamicProgrammingMenu('Dynamic Programming', self.surface)
+            case 'Optimum Policy':
+                self.menu = menus.OptimumPolicyMenu('Optimum Policy', self.surface)
         self.menu.start()
         self.surface = pygame.display.set_mode((600, 400))
 

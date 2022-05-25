@@ -199,8 +199,87 @@ def dynamic_programming_search(grid, goal, cost=1):
             for move_idx, move in enumerate(moves):
                 if move == [diff_row, diff_col]:
                     result[row][col] = moves_char[move_idx]
-    # if resign:
-    #     result[min_f_pos[0]][min_f_pos[1]] = '!'
     result[goal[0]][goal[1]] = '*'
     return result
+
+
+def get_arrow(orientation, move):
+    """Map action commands relative to the current orientation to directions as seen from canonical position.
+     orientations = 0: up; 1: left; 2: down; 3: right
+     commmands = F: Forward; R: Right; L: Left
+     directions = ^: up; >:right; v:down; <:left"""
+    match (orientation, move):
+        case (0, 'F') | (1, 'R') | (3, 'L'):
+            return '^'
+        case (0, 'L') | (1, 'F') | (2, 'R'):
+            return '<'
+        case (0, 'R')  | (2, 'L') | (3, 'F'):
+            return '>'
+        case (1, 'L') | (3, 'R') | (2, 'F'):
+            return 'v'
+
+
+def optimum_policy2D(grid, init, goal, cost):
+        #TODO: change x y to col row
+        """cost: [cost of right turn, cost of forward, cost of left turn]"""
+        moves = [[-1, 0],  # go up
+           [0, -1],  # go left
+           [1, 0],  # go down
+           [0, 1]]  # go right
+
+        # action has 3 values: right turn, no turn, left turn
+        action = [-1, 0, 1]
+        action_name = ['R', 'F', 'L']
+
+
+        value = [[[999 for facing in range(len(moves))] \
+                  for col in range(len(grid[0]))] \
+                 for row in range(len(grid))]
+        policy = [[[' ' for facing in range(len(moves))] \
+                   for col in range(len(grid[0]))] \
+                  for row in range(len(grid))]
+        change = True
+
+        while change:
+            change = False
+
+            for y in range(len(grid)):
+                for x in range(len(grid[0])):
+                    for f in range(len(moves)):
+                        if x == goal[1] and y == goal[0]:
+                            if value[y][x][f] > 0:
+                                value[y][x][f] = 0
+                                policy[y][x][f] = '*'
+                                change = True
+                        elif grid[y][x] == 0:
+                            for f2 in range(len(moves)):
+                                x2 = x + moves[f2][1]
+                                y2 = y + moves[f2][0]
+                                if x2 >= 0 and x2 < len(grid[0]) and y2 >= 0 and y2 < len(grid) and grid[y2][x2] == 0:
+                                    targetVal = value[y2][x2][f2]
+                                    for a in range(len(action)):
+                                        if (f + action[a]) % len(moves) == f2:
+                                            v2 = targetVal + cost[a]
+                                            if v2 < value[y][x][f]:
+                                                value[y][x][f] = v2
+                                                policy[y][x][f] = action_name[a]
+                                                change = True
+
+        policy2D = [[' ' for x in range(len(grid[0]))] for y in range(len(grid))]
+        x = init[1]
+        y = init[0]
+        f = init[2]
+
+        policy2D[y][x] = get_arrow(f, policy[y][x][f])
+
+        while policy[y][x][f] != '*':
+            if policy[y][x][f] == 'R':
+                f = (f - 1) % 4
+            elif policy[y][x][f] == 'L':
+                f = (f + 1) % 4
+            x += moves[f][1]
+            y += moves[f][0]
+            policy2D[y][x] = get_arrow(f, policy[y][x][f])
+        policy2D[y][x] = '*'
+        return policy2D
 

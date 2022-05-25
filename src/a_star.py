@@ -12,7 +12,6 @@ class AStartGUI(GridGUI):
         self.start_pos = list(self.coords_to_row_col(pos[0], pos[1]))
 
     def update_grid_state(self):
-        print('runned')
         if self.start_pos and self.goal:
             self.grid_state = utils.a_star_search(self.grid_obstacles, self.start_pos, self.goal, utils.heuristic)
 
