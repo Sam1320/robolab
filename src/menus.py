@@ -4,8 +4,9 @@ import pygame
 import pygame_menu
 
 
-from src import datatypes, kalman_filter_1d, kalman_filter_2d, a_star, dymamic_programming, particle_filter, optimum_policy
 import env
+from src import datatypes, a_star, particle_filter, kalman_filter_1d, kalman_filter_2d, dynamic_programming, \
+    optimum_policy, path_smoothing
 
 
 class GameMenu(pygame_menu.Menu):
@@ -60,7 +61,7 @@ class GridMenu(GameMenu):
 
     def settings(self):
         menu = pygame_menu.Menu(f'{self.name} Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
-        menu.add.toggle_switch('Load Map', default=self.load_map, onchange=self.set_map_load)
+        menu.add.toggle_switch('Load Map:', default=self.load_map, onchange=self.set_map_load)
         menu.add.range_slider('Obstacle Probability:', default=self.obstacle_prob, range_values=[0, 0.2, 0.4, 0.6, 0.8, 1], onchange=self.set_obstacle_prob)
         menu.add.range_slider('Grid Width :', default=self.width, range_values=(1, 50), increment=1, onchange=self.set_width)
         menu.add.range_slider('Grid Height :', default=self.height, range_values=(1, 50), increment=1, onchange=self.set_height)
@@ -79,13 +80,46 @@ class GridMenu(GameMenu):
     def set_height(self, value):
         self.height = value
 
+
+class AStarMenu(GridMenu):
+    def __init__(self, name, surface, width=600, height=400):
+        super().__init__(name, surface, width, height)
+        self.path_arrows = False
+
+    def controls(self):
+        menu = pygame_menu.Menu(f'{self.name} Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        table = menu.add.table()
+        table.add_row(['Left click', 'set start position'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Right click', 'set goal position'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Middle click', 'modify map'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Escape', 'Exit game'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Enter', 'save map'], cell_padding=8, cell_font_size=20)
+        menu.add.button('Back', menu.close)
+        menu.mainloop(self.surface)
+
+    def settings(self):
+        menu = pygame_menu.Menu(f'{self.name} Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        menu.add.toggle_switch('Load Map:', default=self.load_map, onchange=self.set_map_load)
+        menu.add.selector('Path Type:', [('Color',), ('Arrows',)], default=self.path_arrows, onchange=self.set_path_type)
+        menu.add.range_slider('Obstacle Probability:', default=self.obstacle_prob, range_values=[0, 0.2, 0.4, 0.6, 0.8, 1], onchange=self.set_obstacle_prob)
+        menu.add.range_slider('Grid Width :', default=self.width, range_values=(1, 50), increment=1, onchange=self.set_width)
+        menu.add.range_slider('Grid Height :', default=self.height, range_values=(1, 50), increment=1, onchange=self.set_height)
+        menu.add.button('Save', menu.close)
+        menu.mainloop(self.surface)
+
+    def set_path_type(self, value):
+        if value[0][0] == 'Arrows':
+            self.path_arrows = True
+        else:
+            self.path_arrows = False
+
     def start_the_game(self):
-        self.gui = a_star.AStartGUI(world_size=(self.width, self.height), load_grid=self.load_map, obstacle_prob=self.obstacle_prob)
+        self.gui = a_star.AStartGUI(world_size=(self.width, self.height), load_grid=self.load_map,
+                                    obstacle_prob=self.obstacle_prob, path_arrows=self.path_arrows)
         self.gui.start()
         pygame.display.set_mode((600, 400))
 
-
-class AStarMenu(GridMenu):
+class PathSmoothingMenu(GridMenu):
     def __init__(self, name, surface, width=600, height=400):
         super().__init__(name, surface, width, height)
 
@@ -101,9 +135,10 @@ class AStarMenu(GridMenu):
         menu.mainloop(self.surface)
 
     def start_the_game(self):
-        self.gui = a_star.AStartGUI(world_size=(self.width, self.height), load_grid=self.load_map, obstacle_prob=self.obstacle_prob)
+        self.gui = path_smoothing.PathSmoothingGUI(world_size=(self.width, self.height))
         self.gui.start()
         pygame.display.set_mode((600, 400))
+
 
 
 class OptimumPolicyMenu(GridMenu):
@@ -113,7 +148,6 @@ class OptimumPolicyMenu(GridMenu):
         self.move_left_cost = 1
         self.move_forward_cost = 1
         self.init_orientation = 0
-
 
     def controls(self):
         menu = pygame_menu.Menu(f'{self.name} Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
@@ -172,7 +206,7 @@ class DynamicProgrammingMenu(GridMenu):
         super().__init__(name, surface, width, height)
 
     def start_the_game(self):
-        self.gui = dymamic_programming.DynamicProgrammingGUI(world_size=(self.width, self.height), load_grid=self.load_map, obstacle_prob=self.obstacle_prob)
+        self.gui = dynamic_programming.DynamicProgrammingGUI(world_size=(self.width, self.height), load_grid=self.load_map, obstacle_prob=self.obstacle_prob)
         self.gui.start()
         pygame.display.set_mode((600, 400))
 

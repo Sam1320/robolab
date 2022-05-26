@@ -173,7 +173,7 @@ class RobotGUI:
 
 class GridGUI(RobotGUI):
     #TODO: refactor robotgui class and use super().__init__
-    def __init__(self, world_size=(10, 6), load_grid=False, obstacle_prob=0.2, robot_img='robot2.png'):
+    def __init__(self, world_size=(10, 6), load_grid=False, obstacle_prob=0.2, robot_img='robot2.png', path_arrows=False):
         self.robot_img = robot_img
         self.world_size = world_size
         if load_grid:
@@ -186,13 +186,16 @@ class GridGUI(RobotGUI):
         self.scale = int((1/(world_size[0]+world_size[1]))*1200)
         self.window_width = self.scale * self.world_size[0]
         self.window_height = self.scale * self.world_size[1]
-        self.grid_colors = {'free': (200, 200, 200), 'obstacle': (50, 50, 50)}
+        self.grid_colors = {'free': (200, 200, 200), 'obstacle': (50, 50, 50), 'path': (72, 161, 77),
+                            'smooth_path': (179, 63, 64)}
         self.image_rotation = 0
         self.goal = None
         self.start_pos = None
+        self.resign = False
         self.cell_size = self.scale
         self.outline_thickness = 1
         self.grid_state = [[' ' for col in range(self.world_size[0])] for row in range(self.world_size[1])]
+        self.path_arrows = path_arrows
 
     def init_pygame(self):
         img_size = self.scale/2
@@ -209,7 +212,7 @@ class GridGUI(RobotGUI):
             '<': pg.transform.rotozoom(arrow_img, 180, 1),
             '*': goal_img,
             '!': exclamation_img,
-            'start': pg.transform.rotozoom(start_img, self.image_rotation, 1) if self.image_rotation else start_img
+            'S': pg.transform.rotozoom(start_img, self.image_rotation, 1) if self.image_rotation else start_img
         }
 
     def draw(self):
@@ -223,12 +226,13 @@ class GridGUI(RobotGUI):
                 policy = self.grid_state[row][col]
 
                 if policy != ' ':
-                    self.screen.blit(self.images[policy], (x + self.cell_size / 4, y + self.cell_size / 4))
-                if not(self.start_pos is None) and self.start_pos[:2]  == [row, col]:
-                    pg.draw.rect(self.screen, cell_color, rect, 0)
-                    self.screen.blit(self.images['start'], (x, y + self.cell_size / 4))
-                    if policy != ' ':
-                        self.screen.blit(self.images[policy], (x + self.cell_size / 2, y + self.cell_size / 4))
+                    if self.path_arrows:
+                        self.screen.blit(self.images[policy], (x + self.cell_size/4, y + self.cell_size/4))
+                    else:
+                        color = cell_color if self.resign and policy == '*' else self.grid_colors['path']
+                        pg.draw.rect(self.screen, color, rect, 0)
+                        if policy in ('*', '!', 'S'):
+                            self.screen.blit(self.images[policy], (x + self.cell_size/4, y + self.cell_size/4))
 
 
     def handle_events(self):
@@ -245,6 +249,8 @@ class GridGUI(RobotGUI):
                     case 3:
                         self.handle_right_click()
                 self.update_grid_state()
+            elif event.type == pg.MOUSEWHEEL:
+                self.handle_mouse_wheel(event)
             elif event.type == pg.KEYDOWN:
                 if event.key == pg.K_RETURN:
                     self.handle_enter()
@@ -257,6 +263,9 @@ class GridGUI(RobotGUI):
         with open('grid.pickle', 'wb') as file:
             pickle.dump(self.grid_obstacles, file)
 
+    def handle_mouse_wheel(self, event):
+        pass
+
     def update_grid_state(self):
         pass
 
@@ -266,7 +275,15 @@ class GridGUI(RobotGUI):
     def handle_middle_click(self):
         pos = pg.mouse.get_pos()
         obstacle = list(self.coords_to_row_col(pos[0], pos[1]))
+        if self.goal and obstacle == self.goal:
+            self.goal = None
+            self.reset_grid_state()
         self.grid_obstacles[obstacle[0]][obstacle[1]] = (self.grid_obstacles[obstacle[0]][obstacle[1]] + 1) % 2
+
+    def reset_grid_state(self):
+        self.grid_state = [[' ' for col in range(self.world_size[0])] for row in range(self.world_size[1])]
+        if self.start_pos:
+            self.grid_state[self.start_pos[0]][self.start_pos[1]] = 'S'
 
     def handle_right_click(self):
         pos = pg.mouse.get_pos()

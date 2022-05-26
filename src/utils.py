@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pygame as pg
 import random
 import matplotlib.backends.backend_qt5agg as agg
@@ -85,6 +87,8 @@ def a_star_search(grid, init, goal, heuristic, cost=1, return_path_coords=False)
     expand, resign, min_f_pos = get_expansion_grid(grid, init, goal, heuristic, cost=1)
     cur_min = math.inf
     cur = goal if not resign else min_f_pos
+    if return_path_coords:
+        path_coords.append(cur)
     result[goal[0]][goal[1]] = '*'
     while cur_min > 0:
         row, col = cur
@@ -108,10 +112,11 @@ def a_star_search(grid, init, goal, heuristic, cost=1, return_path_coords=False)
         cur = min_n
     if resign:
         result[min_f_pos[0]][min_f_pos[1]] = '!'
+    result[init[0]][init[1]] = 'S'
     if return_path_coords:
-        path_coords = path_coords.reverse()
+        path_coords.reverse()
         return result, path_coords
-    return result
+    return result, resign
 
 
 def get_expansion_grid(grid, init, goal, heuristic, cost=1):
@@ -292,5 +297,42 @@ def optimum_policy2D(grid, init, goal, cost):
             y += moves[f][0]
             policy2D[y][x] = get_arrow(f, policy[y][x][f])
         policy2D[y][x] = '*'
+        policy2D[init[0]][init[1]] = 'S'
         return policy2D
 
+
+def interpolate_n_points(points, n):
+    """Interpolate n 2D points between points[0] and points[1]"""
+    result = []
+    for i in range(n):
+        t = i / (n - 1)
+        result.append([points[0][0] * (1 - t) + points[1][0] * t,
+                       points[0][1] * (1 - t) + points[1][1] * t])
+    return result
+
+
+def extend_path_length(path, n):
+    """Extend path by n points"""
+    result = []
+    for i in range(len(path)-1):
+        result.extend(interpolate_n_points([path[i], path[i+1]], n))
+    return result
+
+
+def smooth_path(path, weight_data=0.5, weight_smooth=0.1, tolerance=0.000001):
+    newpath = deepcopy(path)
+    while True:
+        totalChange = 0.
+        for i in range(len(path)):
+            if i != 0 and i != (len(path) - 1):
+                for dim in range(len(path[i])):
+                    oldVal = newpath[i][dim]
+                    newpath[i][dim] = newpath[i][dim] + \
+                                      weight_data * (path[i][dim] - newpath[i][dim]) + \
+                                      weight_smooth * (
+                                                  newpath[i + 1][dim] + newpath[i - 1][dim] - 2 * newpath[i][
+                                              dim])
+                    totalChange += abs(oldVal - newpath[i][dim])
+        if totalChange < tolerance:
+            break
+    return newpath
