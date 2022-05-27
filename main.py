@@ -61,9 +61,9 @@ class MainGUI():
                 self.menu = menus.OptimumPolicyMenu('Optimum Policy', self.surface)
             case 'Path Smoothing':
                 self.menu = menus.PathSmoothingMenu('Path Smoothing', self.surface)
+
         self.menu.start()
         self.surface = pygame.display.set_mode((600, 400))
-
 
 main_gui = MainGUI()
 main_gui.start()

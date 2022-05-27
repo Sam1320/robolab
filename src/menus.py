@@ -39,7 +39,7 @@ class GameMenu(pygame_menu.Menu):
 
 
 class GridMenu(GameMenu):
-    def __init__(self, name, surface, width=600, height=400):
+    def __init__(self, name, surface, width=600, height=400, max_grid_width=50, max_grid_height=50):
         super().__init__(name, surface, width, height)
         self.name = name
         self.width = 10
@@ -47,6 +47,8 @@ class GridMenu(GameMenu):
         self.surface = surface
         self.load_map = 0
         self.obstacle_prob = 0.2
+        self.max_grid_width = max_grid_width
+        self.max_grid_height = max_grid_height
 
     def controls(self):
         menu = pygame_menu.Menu(f'{self.name} Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
@@ -63,8 +65,8 @@ class GridMenu(GameMenu):
         menu = pygame_menu.Menu(f'{self.name} Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         menu.add.toggle_switch('Load Map:', default=self.load_map, onchange=self.set_map_load)
         menu.add.range_slider('Obstacle Probability:', default=self.obstacle_prob, range_values=[0, 0.2, 0.4, 0.6, 0.8, 1], onchange=self.set_obstacle_prob)
-        menu.add.range_slider('Grid Width :', default=self.width, range_values=(1, 50), increment=1, onchange=self.set_width)
-        menu.add.range_slider('Grid Height :', default=self.height, range_values=(1, 50), increment=1, onchange=self.set_height)
+        menu.add.range_slider('Grid Width :', default=self.width, range_values=(1, self.max_grid_width), increment=1, onchange=self.set_width)
+        menu.add.range_slider('Grid Height :', default=self.height, range_values=(1, self.max_grid_height), increment=1, onchange=self.set_height)
         menu.add.button('Save', menu.close)
         menu.mainloop(self.surface)
 
@@ -75,10 +77,10 @@ class GridMenu(GameMenu):
         self.load_map = value
 
     def set_width(self, value):
-        self.width = value
+        self.width = int(value)
 
     def set_height(self, value):
-        self.height = value
+        self.height = int(value)
 
 
 class AStarMenu(GridMenu):
@@ -120,15 +122,17 @@ class AStarMenu(GridMenu):
         pygame.display.set_mode((600, 400))
 
 class PathSmoothingMenu(GridMenu):
-    def __init__(self, name, surface, width=600, height=400):
-        super().__init__(name, surface, width, height)
+    def __init__(self, name, surface, width=600, height=400, max_grid_width=20, max_grid_height=20):
+        super().__init__(name, surface, width, height, max_grid_width=max_grid_width, max_grid_height=max_grid_height)
 
     def controls(self):
         menu = pygame_menu.Menu(f'{self.name} Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         table = menu.add.table()
+
         table.add_row(['Left click', 'set start position'], cell_padding=8, cell_font_size=20)
         table.add_row(['Right click', 'set goal position'], cell_padding=8, cell_font_size=20)
         table.add_row(['Middle click', 'modify map'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Mouse wheel', 'adjust path smoothness'], cell_padding=8, cell_font_size=20)
         table.add_row(['Escape', 'Exit game'], cell_padding=8, cell_font_size=20)
         table.add_row(['Enter', 'save map'], cell_padding=8, cell_font_size=20)
         menu.add.button('Back', menu.close)
@@ -206,7 +210,8 @@ class DynamicProgrammingMenu(GridMenu):
         super().__init__(name, surface, width, height)
 
     def start_the_game(self):
-        self.gui = dynamic_programming.DynamicProgrammingGUI(world_size=(self.width, self.height), load_grid=self.load_map, obstacle_prob=self.obstacle_prob)
+        self.gui = dynamic_programming.DynamicProgrammingGUI(world_size=(self.width, self.height), load_grid=self.load_map,
+                                                             obstacle_prob=self.obstacle_prob)
         self.gui.start()
         pygame.display.set_mode((600, 400))
 
@@ -242,7 +247,7 @@ class ParticleMenu(GameMenu):
         menu.add.range_slider('Number of Particles:', default=self.number_of_particles, range_values=[10, 100, 200, 400, 800], onchange=self.set_number_of_particles)
         menu.add.range_slider('Number of Celestial Bodies:', default=self.number_of_planets, range_values=(1, 7), increment=1, onchange=self.set_number_of_planets)
         menu.add.range_slider('Forward noise:', default=self.forward_noise, range_values=(0, 5), increment=0.05, onchange=self.set_forward_noise)
-        menu.add.range_slider('Turing noise:', default=self.turning_noise, range_values=(0, 5), increment=0.05, onchange=self.set_turning_noise)
+        menu.add.range_slider('Turning noise:', default=self.turning_noise, range_values=(0, 5), increment=0.05, onchange=self.set_turning_noise)
         menu.add.range_slider('Sense noise:', default=self.sense_noise, range_values=(0, 20), increment=1, onchange=self.set_sense_noise)
         menu.add.button('Save', menu.close)
         menu.mainloop(self.surface)

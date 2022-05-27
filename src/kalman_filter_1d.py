@@ -11,7 +11,7 @@ from src import utils
 
 
 class Kalman_1D(datatypes.RobotGUI):
-    def __init__(self, screen_width=1500, stepsize=10, motion_sigma=10, measurement_sigma=10., initial_uncertainty='big'):
+    def __init__(self, screen_width=1000, stepsize=10, motion_sigma=10, measurement_sigma=10., initial_uncertainty='big'):
         super().__init__(screen_width=screen_width, height_width_ratio=2/3)
         self.step_size = stepsize
         self.moving = False

@@ -319,7 +319,7 @@ def extend_path_length(path, n):
     return result
 
 
-def smooth_path(path, weight_data=0.5, weight_smooth=0.1, tolerance=0.000001):
+def smooth_path(path, weight_data=0.5, weight_smooth=0.1, tolerance=0.0001):
     newpath = deepcopy(path)
     while True:
         totalChange = 0.
