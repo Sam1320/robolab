@@ -29,7 +29,6 @@ class RobotCar(object):
         """
         self.x = 0.0
         self.y = 0.0
-        self.v = 1.0
         self.orientation = 0.0
         self.length = length
         self.steering_noise = 0.0
@@ -47,14 +46,15 @@ class RobotCar(object):
         self.y = y
         self.orientation = orientation % (2.0 * np.pi)
 
-    def set_noise(self, steering_noise, distance_noise):
+
+    def set_noise(self, steering_noise, speed_noise):
         """
         Sets the noise parameters.
         """
         # makes it possible to change the noise parameters
         # this is often useful in particle filters
         self.steering_noise = steering_noise
-        self.distance_noise = distance_noise
+        self.speed_noise = speed_noise
 
     def set_steering_drift(self, drift):
         """
@@ -62,17 +62,17 @@ class RobotCar(object):
         """
         self.steering_drift = drift
 
-    def move(self, steering, distance, tolerance=0.001, max_steering_angle=np.pi / 4.0):
+    def move(self, steering, speed, tolerance=0.001, max_steering_angle=np.pi / 4.0, dt=1.0):
         """
         steering = front wheel steering angle, limited by max_steering_angle
-        distance = total distance driven, most be non-negative
+        speed = speed of the car
         """
         if steering > max_steering_angle:
             steering = max_steering_angle
         if steering < -max_steering_angle:
             steering = -max_steering_angle
-        if distance < 0.0:
-            distance = 0.0
+        speed = max(0, speed)
+        distance = speed * dt
 
         # apply noise
         steering2 = random.gauss(steering, self.steering_noise)

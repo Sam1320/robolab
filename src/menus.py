@@ -6,7 +6,7 @@ import pygame_menu
 
 import env
 from src import datatypes, a_star, particle_filter, kalman_filter_1d, kalman_filter_2d, dynamic_programming, \
-    optimum_policy, path_smoothing
+    optimum_policy, path_smoothing, pid_control
 
 
 class GameMenu(pygame_menu.Menu):
@@ -18,6 +18,7 @@ class GameMenu(pygame_menu.Menu):
         self.add.button('Back', self.go_back)
         self.surface = surface
         self.gui_class = datatypes.RobotGUI
+        self.name = name
 
     def controls(self):
         pass
@@ -41,7 +42,6 @@ class GameMenu(pygame_menu.Menu):
 class GridMenu(GameMenu):
     def __init__(self, name, surface, width=600, height=400, max_grid_width=50, max_grid_height=50):
         super().__init__(name, surface, width, height)
-        self.name = name
         self.width = 10
         self.height = 10
         self.surface = surface
@@ -144,6 +144,67 @@ class PathSmoothingMenu(GridMenu):
         pygame.display.set_mode((600, 400))
 
 
+class PIDControlMenu(GameMenu):
+    def __init__(self, name, surface, width=600, height=400,
+                 x_init=0, y_init=0.1, drift=0,
+                 proportional_gain=0.1,
+                 integral_gain=0,
+                 differential_gain=0):
+        super().__init__(name, surface, width, height)
+        self.x_init = x_init
+        self.y_init = y_init
+        self.drift = drift
+        self.proportional_gain = proportional_gain
+        self.integral_gain = integral_gain
+        self.differential_gain = differential_gain
+
+    def settings(self):
+        menu = pygame_menu.Menu(f'{self.name} Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        menu.add.vertical_margin(25)
+        menu.add.range_slider('X Initial:', default=self.x_init, range_values=(-1, 1), increment=0.01, onchange=self.set_x_init)
+        menu.add.range_slider('Y Initial:', default=self.y_init, range_values=(-1, 1), increment=0.01, onchange=self.set_y_init)
+        menu.add.range_slider('Drift:', default=self.drift, range_values=(-30, 30), increment=5, onchange=self.set_drift)
+        menu.add.range_slider('Proportional Gain:', default=self.proportional_gain, range_values=(0, 1), increment=0.01, onchange=self.set_proportional_gain)
+        menu.add.range_slider('Integral Gain:', default=self.integral_gain, range_values=(0, 1), increment=0.01, onchange=self.set_integral_gain)
+        menu.add.range_slider('Differential Gain:', default=self.differential_gain, range_values=(0, 1), increment=0.01, onchange=self.set_differential_gain)
+        menu.add.button('Save', menu.close)
+        menu.mainloop(self.surface)
+
+    def controls(self):
+        menu = pygame_menu.Menu(f'{self.name} Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        table = menu.add.table()
+        table.add_row(['Left click', 'increase speed'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Right click', 'decrease speed'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Escape', 'Exit game'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Enter', 'save map'], cell_padding=8, cell_font_size=20)
+        menu.add.button('Back', menu.close)
+        menu.mainloop(self.surface)
+
+    def set_x_init(self, value):
+        self.x_init = value
+
+    def set_y_init(self, value):
+        self.y_init = value
+
+    def set_drift(self, value):
+        self.drift = value
+
+    def set_proportional_gain(self, value):
+        self.proportional_gain = value
+
+    def set_integral_gain(self, value):
+        self.integral_gain = value
+
+    def set_differential_gain(self, value):
+        self.differential_gain = value
+
+    def start_the_game(self):
+        self.gui = pid_control.PIDControlGUI(x_init=self.x_init, y_init=self.y_init, drift=self.drift,
+                                     proportional_gain=self.proportional_gain, integral_gain=self.integral_gain,
+                                     differential_gain=self.differential_gain)
+        self.gui.start()
+        pygame.display.set_mode((600, 400))
+
 
 class OptimumPolicyMenu(GridMenu):
     def __init__(self, name, surface, width=600, height=400):
@@ -228,8 +289,7 @@ class ParticleMenu(GameMenu):
         self.gui = None
 
     def controls(self):
-        menu = pygame_menu.Menu('Particle Filter Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
-
+        menu = pygame_menu.Menu(f'{self.name} Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         table = menu.add.table()
         table.add_row(['Up arrow', 'Move forward'], cell_padding=8, cell_font_size=20)
         table.add_row(['Right arrow', 'Turn rightward'], cell_padding=8, cell_font_size=20)
@@ -242,7 +302,7 @@ class ParticleMenu(GameMenu):
         menu.mainloop(self.surface)
 
     def settings(self):
-        menu = pygame_menu.Menu('Particle Filter Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        menu = pygame_menu.Menu(f'{self.name} Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         menu.add.vertical_margin(25)
         menu.add.range_slider('Number of Particles:', default=self.number_of_particles, range_values=[10, 100, 200, 400, 800], onchange=self.set_number_of_particles)
         menu.add.range_slider('Number of Celestial Bodies:', default=self.number_of_planets, range_values=(1, 7), increment=1, onchange=self.set_number_of_planets)
@@ -292,7 +352,7 @@ class KalmanFilter2DMenu(GameMenu):
         pygame.display.set_mode((600, 400))
 
     def controls(self):
-        menu = pygame_menu.Menu('Kalman Filter 2D Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        menu = pygame_menu.Menu(f'{self.name} Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         table = menu.add.table()
         table.add_row(['Up arrow', 'Move up'], cell_padding=8, cell_font_size=20)
         table.add_row(['Right arrow', 'Move right'], cell_padding=8, cell_font_size=20)
@@ -304,7 +364,7 @@ class KalmanFilter2DMenu(GameMenu):
         menu.mainloop(self.surface)
 
     def settings(self):
-        menu = pygame_menu.Menu('Kalman Filter 2D Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        menu = pygame_menu.Menu(f'{self.name} Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         menu.add.vertical_margin(25)
         menu.add.selector('Initial uncertainty:', [('small', 0), ('medium', 1), ('big', 2)],  default=2, onchange=self.set_init_uncertainty)
         menu.add.range_slider('Sense noise:', default=self.sense_noise, range_values=(0, 50), increment=1, onchange=self.set_sense_noise)
@@ -341,7 +401,7 @@ class KalmanFilter1DMenu(GameMenu):
         pygame.display.set_mode((600, 400))
 
     def controls(self):
-        menu = pygame_menu.Menu('Kalman Filter 1D Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        menu = pygame_menu.Menu(f'{self.name} Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         table = menu.add.table()
         table.add_row(['Right arrow', 'Move right'], cell_padding=8, cell_font_size=20)
         table.add_row(['Left arrow', 'Move left'], cell_padding=8, cell_font_size=20)
@@ -351,7 +411,7 @@ class KalmanFilter1DMenu(GameMenu):
         menu.mainloop(self.surface)
 
     def settings(self):
-        menu = pygame_menu.Menu('Kalman Filter 1D Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
+        menu = pygame_menu.Menu(f'{self.name} Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         menu.add.vertical_margin(25)
         menu.add.selector('Initial uncertainty:', [('small', 0), ('medium', 1), ('big', 2)],  default=2, onchange=self.set_init_uncertainty)
         menu.add.range_slider('Sense noise:', default=self.sense_noise, range_values=(0, 50), increment=1, onchange=self.set_sense_noise)
