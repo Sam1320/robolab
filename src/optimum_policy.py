@@ -4,8 +4,10 @@ import pygame as pg
 
 
 class OptimumPolicyGUI(GridGUI):
-    def __init__(self, world_size=(10, 6), load_grid=False, obstacle_prob=0.2, costs=(1, 1, 1), init_orientation=0, robot_img='car.png'):
-        super().__init__(world_size=world_size, load_grid=load_grid, obstacle_prob=obstacle_prob, robot_img=robot_img)
+    def __init__(self, world_size=(10, 6), load_grid=False, obstacle_prob=0.2, costs=(1, 1, 1), init_orientation=0,
+                 robot_img='car.png', path_arrows=True):
+        super().__init__(world_size=world_size, load_grid=load_grid, obstacle_prob=obstacle_prob,
+                         robot_img=robot_img, path_arrows=path_arrows)
         self.costs = costs
         self.init_orientation = init_orientation
         match init_orientation:

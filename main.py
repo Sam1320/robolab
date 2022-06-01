@@ -9,17 +9,17 @@ import src.menus as menus
 class MainGUI():
     def __init__(self):
         pygame.init()
-        self.surface = pygame.display.set_mode((600, 400))
+        self.surface = pygame.display.set_mode((900, 600))
         pygame.display.set_caption('')
         self.game = None
-        self.menu = pygame_menu.Menu('RoboLab', 600, 400,
+        self.menu = pygame_menu.Menu('RoboLab', 900, 600,
                                 theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.EXIT)
         self.image = None
-        self.guis = [('Particle Filter',), ('Kalman Filter 1D',), ('Kalman Filter 2D',), ('A*',),
+        self.guis = [('Histogram Filter',),('Particle Filter',), ('Kalman Filter 1D',), ('Kalman Filter 2D',), ('A*',),
                      ('Dynamic Programming',), ('Optimum Policy',), ('Path Smoothing',), ('PID Control',)]
         self.menu.add.text_input('Name :', default='UserName')
         self.menu.add.selector('Game :', self.guis, default=0, onchange=self.set_game)
-        self.image = self.menu.add.image(os.path.join(env.images_path, 'spaceship.png'), scale=(0.25,0.25))
+        self.image = self.menu.add.image(os.path.join(env.images_path, 'histogram_filter_thumbnail_resized.png'))
         self.menu.add.button('Next', self.start_the_game)
         self.menu.add.button('Quit', pygame_menu.events.EXIT)
         self.game = 'Particle Filter'
@@ -31,16 +31,27 @@ class MainGUI():
         self.game = value[0][0]
         match self.game:
             case 'Particle Filter':
-                img_name = 'spaceship.png'
-            case 'A*' | 'Dynamic Programming' | 'Path Smoothing':
-                img_name = 'flag.png'
-            case 'Kalman Filter 2D' | 'Kalman Filter 1D':
-                img_name = 'robot2.png'
-            case 'Optimum Policy' | 'PID Control':
-                img_name = 'car.png'
+                img_name = 'particle_filter_thumbnail_resized.png'
+            case 'Kalman Filter 1D':
+                img_name = 'kalman_1d_thumbnail_resized.png'
+            case 'Kalman Filter 2D':
+                img_name = 'kalman_2d_thumbnail_resized.png'
+            case 'A*':
+                img_name = 'a_star_thumbnail_resized.png'
+            case 'Dynamic Programming':
+                img_name = 'dynamic_programming_thumbnail_resized.png'
+            case 'Optimum Policy':
+                img_name = 'optimum_policy_thumbnail_resized.png'
+            case 'Path Smoothing':
+                img_name = 'path_smoothing_thumbnail_resized.png'
+            case 'PID Control':
+                img_name = 'pid_control_thumbnail_resized.png'
+            case 'Histogram Filter':
+                img_name = 'histogram_filter_thumbnail_resized.png'
+
 
         image = pygame_menu.baseimage.BaseImage(os.path.join(env.images_path, img_name))
-        image = image.scale(0.25, 0.25)
+        # image = image.scale(0.25, 0.25)
         if self.image:
             self.image.set_image(image)
 
@@ -62,6 +73,8 @@ class MainGUI():
                 self.menu = menus.PathSmoothingMenu('Path Smoothing', self.surface)
             case 'PID Control':
                 self.menu = menus.PIDControlMenu('PID Control', self.surface)
+            case 'Histogram Filter':
+                self.menu = menus.HistogramFilterMenu('Histogram Filter', self.surface)
 
         self.menu.start()
         self.surface = pygame.display.set_mode((600, 400))

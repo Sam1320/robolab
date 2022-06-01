@@ -260,9 +260,9 @@ class RobotGUI:
 
 
 class GridGUI(RobotGUI):
-    #TODO: refactor robotgui class and use super().__init__
-    def __init__(self, world_size=(10, 6), load_grid=False, obstacle_prob=0.2, robot_img='robot2.png', path_arrows=False):
-        self.robot_img = robot_img
+    def __init__(self, world_size=(10, 6), load_grid=False, obstacle_prob=0.2, robot_img='robot2.png',
+                 path_arrows=False, plot=False, robot_size='small'):
+        super().__init__(robot_img=robot_img, plot=plot, robot_size=robot_size)
         self.world_size = world_size
         if load_grid:
             with open('grid.pickle', 'rb') as file:
@@ -321,7 +321,6 @@ class GridGUI(RobotGUI):
                         pg.draw.rect(self.screen, color, rect, 0)
                         if policy in ('*', '!', 'S'):
                             self.screen.blit(self.images[policy], (x + self.cell_size/4, y + self.cell_size/4))
-
 
     def handle_events(self):
         for event in pg.event.get():

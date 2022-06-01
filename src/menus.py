@@ -6,7 +6,7 @@ import pygame_menu
 
 import env
 from src import datatypes, a_star, particle_filter, kalman_filter_1d, kalman_filter_2d, dynamic_programming, \
-    optimum_policy, path_smoothing, pid_control
+    optimum_policy, path_smoothing, pid_control, histogram_filter
 
 
 class GameMenu(pygame_menu.Menu):
@@ -121,6 +121,7 @@ class AStarMenu(GridMenu):
         self.gui.start()
         pygame.display.set_mode((600, 400))
 
+
 class PathSmoothingMenu(GridMenu):
     def __init__(self, name, surface, width=600, height=400, max_grid_width=20, max_grid_height=20):
         super().__init__(name, surface, width, height, max_grid_width=max_grid_width, max_grid_height=max_grid_height)
@@ -216,6 +217,7 @@ class OptimumPolicyMenu(GridMenu):
         self.move_left_cost = 1
         self.move_forward_cost = 1
         self.init_orientation = 0
+        self.path_arrows = True
 
     def controls(self):
         menu = pygame_menu.Menu(f'{self.name} Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
@@ -231,6 +233,7 @@ class OptimumPolicyMenu(GridMenu):
     def settings(self):
         menu = pygame_menu.Menu(f'{self.name} Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         menu.add.toggle_switch('Load Map', default=self.load_map, onchange=self.set_map_load)
+        menu.add.selector('Path Type:', [('Color',), ('Arrows',)], default=self.path_arrows, onchange=self.set_path_type)
         menu.add.selector('Initial Orientation', [('UP', 0), ('LEFT', 1), ('DOWN', 2), ('RIGHT', 3)],
                           default=self.init_orientation, onchange=self.set_init_orientation)
         menu.add.range_slider('Move Left Cost', default=self.move_left_cost,
@@ -248,6 +251,12 @@ class OptimumPolicyMenu(GridMenu):
         menu.add.button('Save', menu.close)
         menu.mainloop(self.surface)
 
+    def set_path_type(self, value):
+        if value[0][0] == 'Arrows':
+            self.path_arrows = True
+        else:
+            self.path_arrows = False
+
     def set_init_orientation(self, value, num):
         self.init_orientation = num
 
@@ -264,7 +273,7 @@ class OptimumPolicyMenu(GridMenu):
         costs = [self.move_right_cost, self.move_forward_cost, self.move_left_cost]
         self.gui = optimum_policy.OptimumPolicyGUI(world_size=(self.width, self.height), load_grid=self.load_map,
                                                    obstacle_prob=self.obstacle_prob, costs=costs,
-                                                   init_orientation=self.init_orientation)
+                                                   init_orientation=self.init_orientation, path_arrows=self.path_arrows)
         self.gui.start()
         pygame.display.set_mode((600, 400))
 
@@ -348,12 +357,6 @@ class KalmanFilter2DMenu(GameMenu):
         self.motion_noise = 1
         self.sense_noise = 5
 
-    def start_the_game(self):
-        self.gui = kalman_filter_2d.Kalman_2D(motion_sigma=self.motion_noise, measurement_sigma=self.sense_noise,
-                                              stepsize=self.step_size, initial_uncertainty=self.initial_uncertainty)
-        self.gui.start()
-        pygame.display.set_mode((600, 400))
-
     def controls(self):
         menu = pygame_menu.Menu(f'{self.name} Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         table = menu.add.table()
@@ -387,6 +390,89 @@ class KalmanFilter2DMenu(GameMenu):
 
     def set_sense_noise(self, value):
         self.sense_noise = value
+
+    def start_the_game(self):
+        self.gui = kalman_filter_2d.Kalman_2D(motion_sigma=self.motion_noise, measurement_sigma=self.sense_noise,
+                                              stepsize=self.step_size, initial_uncertainty=self.initial_uncertainty)
+        self.gui.start()
+        pygame.display.set_mode((600, 400))
+
+
+class HistogramFilterMenu(GameMenu):
+    def __init__(self, name, surface, width=600, height=400, theme=pygame_menu.themes.THEME_SOLARIZED):
+        super().__init__(name, surface, width, height, theme=theme)
+        # robot motion and sensing probabilities
+        self.pHit = .9
+        self.pMiss = 0.1
+        self.pGood = .8
+        self.pOvershoot = 0.5
+        self.pUndershoot = 1 - self.pOvershoot
+        self.grid_width = 10
+        self.grid_height = 10
+
+    def controls(self):
+        menu = pygame_menu.Menu(f'{self.name} Controls', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED,
+                                onclose=pygame_menu.events.BACK)
+        table = menu.add.table()
+        table.add_row(['Up arrow', 'Move up'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Right arrow', 'Move right'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Down arrow', 'Move down'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Left arrow', 'Move left'], cell_padding=8, cell_font_size=20)
+        table.add_row(['S', 'Sense environment'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Escape', 'Exit game'], cell_padding=8, cell_font_size=20)
+        menu.add.button('Back', menu.close)
+        menu.mainloop(self.surface)
+
+    def settings(self):
+        menu = pygame_menu.Menu(f'{self.name} Settings', 600, 400, theme=pygame_menu.themes.THEME_SOLARIZED,
+                                onclose=pygame_menu.events.BACK)
+        menu.add.vertical_margin(25)
+        menu.add.range_slider('Grid Width :', default=self.grid_width, range_values=(1, 50), increment=1, onchange=self.set_width)
+        menu.add.range_slider('Grid Height :', default=self.grid_height, range_values=(1, 50), increment=1, onchange=self.set_height)
+        menu.add.range_slider('Good probability:', default=self.pGood, range_values=(0, 1), increment=0.1,
+                                onchange=self.set_pGood)
+        self.overshoot_slider = menu.add.range_slider('Overshoot Probability:', default=self.pOvershoot, range_values=(0, 1), increment=0.1,
+                              onchange=self.set_overshoot_prob)
+        self.undershoot_slider = menu.add.range_slider('Undershoot Probability:', default=self.pUndershoot, range_values=(0, 1), increment=0.1,
+                                onchange=self.set_undershoot_prob)
+        menu.add.range_slider('Hit Probability:', default=self.pHit, range_values=(0, 1), increment=0.1,
+                                onchange=self.set_hit_prob)
+        menu.add.range_slider('Miss Probability:', default=self.pMiss, range_values=(0, 1), increment=0.1,
+                                onchange=self.set_miss_prob)
+        menu.add.button('Save', menu.close)
+        menu.mainloop(self.surface)
+
+    def set_width(self, value):
+        self.grid_width = value
+
+    def set_height(self, value):
+        self.grid_height = value
+
+    def set_pGood(self, value):
+        self.pGood = value
+
+    def set_overshoot_prob(self, value):
+        self.pOvershoot = value
+        self.pUndershoot = (1 - self.pOvershoot)
+        self.undershoot_slider.set_value(self.pUndershoot)
+
+    def set_undershoot_prob(self, value):
+        self.pUndershoot = value
+        self.pOvershoot = (1 - self.pUndershoot)
+        self.overshoot_slider.set_value(self.pOvershoot)
+
+    def set_hit_prob(self, value):
+        self.pHit = value
+
+    def set_miss_prob(self, value):
+        self.pMiss = value
+
+    def start_the_game(self):
+        self.gui = histogram_filter.HistogramFilterGUI(world_size=(self.grid_width, self.grid_height), pHit=self.pHit,
+                                                       pMiss=self.pMiss, pGood=self.pGood, pOvershoot=self.pOvershoot,
+                                                       pUndershoot=self.pUndershoot)
+        self.gui.start()
+        pygame.display.set_mode((600, 400))
 
 
 class KalmanFilter1DMenu(GameMenu):

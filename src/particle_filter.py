@@ -25,14 +25,10 @@ LINEAR_STEP = 0.3
 # make moon orbit around the earth?
 # implement blitting or use pyqtgraph to bring fps to >30
 
-# DONE: change background color
-# DONE: improve fps to >11
-# DONE: improve fps to >5
-
 
 class ParticleFilterGUI(RobotGUI):
     def __init__(self, n_particles, forward_noise, turning_noise, sense_noise, n_planets):
-        super().__init__(screen_width=1000, height_width_ratio=1/2, robot_img="ufo")
+        super().__init__(screen_width=1000, height_width_ratio=1/2, robot_img="spaceship")
         self.n_particles = n_particles
         self.n_planets = n_planets
         self.particles = [RobotParticle(world_size=self.world_size, forward_noise=forward_noise, turning_noise=turning_noise, sense_noise=sense_noise)
@@ -118,7 +114,7 @@ class ParticleFilterGUI(RobotGUI):
             V.append(math.sin(angle))
 
         self.fig.canvas.flush_events()
-        Q = self.ax.quiver(X, Y, U, V, color='red', pivot='middle')#, scale=1/4, units='xy', headwidth=3/2)
+        Q = self.ax.quiver(X, Y, U, V, color='red', pivot='middle')
 
         surface = utils.fig2surface(self.fig)
         plt.close(self.fig)
