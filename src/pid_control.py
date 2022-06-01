@@ -11,18 +11,18 @@ class PIDControlGUI(RobotGUI):
     This class is used to control a robot using a PID controller.
     """
     def __init__(self, robot_img='car.png', screen_width=1500, height_width_ratio=1/2, robot_size='medium',
-                 x_init=0.0, y_init=0.5, drift=10, proportional_gain=.1, differential_gain=3.0, integral_gain=0.001):
+                 x_init=0.0, y_init=0.7, drift=10, proportional_gain=.1, differential_gain=3.0, integral_gain=0.001):
         super().__init__(robot_img=robot_img, screen_width=screen_width,
                          height_width_ratio=height_width_ratio, robot_size=robot_size)
-        self.robot_speed = 5
+        self.robot_speed = 4
         self.dt = 1
         self.scroll = 0
         self.background_image_path = os.path.join(env.images_path, 'road.png')
         self.drift = drift
 
-        self.proportional_gain = proportional_gain
-        self.integral_gain = integral_gain
-        self.differential_gain = differential_gain
+        self.proportional_gain = proportional_gain # 0.023
+        self.integral_gain = integral_gain # 2.34e-06
+        self.differential_gain = differential_gain #0.464
 
         self.x_init = (x_init*(self.screen_width/2)) + self.screen_width/2  # x position is fixed
         self.y_init = (y_init*(self.screen_height/2))
@@ -50,9 +50,11 @@ class PIDControlGUI(RobotGUI):
         self.bg_image_width = self.bg_image.get_rect().width
         self.n_tiles = math.ceil(self.screen_width/self.bg_image_width) + 2
 
-        # robot_copy = self.make_robot()
-        # self.run(robot_copy, [self.proportional_gain, self.derivative_gain, self.integral_gain], n=200, speed=self.robot_speed)
-        #
+
+        # load and transform clock image and store in variable
+        self.clock_img = pg.image.load(os.path.join(env.images_path, 'sand-clock.png')).convert_alpha()
+        # resize the clock image to twice the size of the car
+        self.clock_img = pg.transform.smoothscale(self.clock_img, (self.robot_size*2, self.robot_size*2))
         # params, best_error = self.twiddle()
         # # print parameters and best error
         # print('PID parameters: ', params)
@@ -70,12 +72,34 @@ class PIDControlGUI(RobotGUI):
                 elif event.key == pg.K_LEFT:
                     # truncate minimum scroll speed to 0
                     self.robot_speed = max(0, self.robot_speed - 1)
+                elif event.key == pg.K_UP:
+                    self.drift += 1
+                    self.robot.set_steering_drift(math.radians(self.drift))
+                elif event.key == pg.K_DOWN:
+                    self.drift = max(0, self.drift - 1)
+                    self.robot.set_steering_drift(math.radians(self.drift))
                 elif event.key == pg.K_t:
-                    params, _ = self.twiddle()
+                    current_y_pos = self.robot.y
+                    current_x_pos = self.robot.x
+                    # plot clock and loading message
+                    message = 'Finding best PID parameters given the current car position, speed and drift...'
+                    self.screen.blit(self.clock_img, (self.screen_width/2 - self.clock_img.get_rect().width/2,
+                                                        self.screen_height/2 - self.clock_img.get_rect().height/2))
+                    self.screen.blit(self.font.render(message, True, (255, 255, 255)),
+                                     (self.screen_width/2 - self.font.size(message)[0]/2,
+                                    self.screen_height/2 + self.clock_img.get_rect().height/2 + 10))
+                    pg.display.flip()
+                    params, best_error = self.twiddle(x=current_x_pos, y=current_y_pos, speed=self.robot_speed)
+                    # reset parameters and robot position
                     self.proportional_gain = params[0]
                     self.differential_gain = params[1]
                     self.integral_gain = params[2]
-                    self.robot = self.make_robot(image=self.car_img)
+                    self.robot = RobotCar(image=self.car_img, length=self.car_length)
+                    self.robot.set(current_x_pos, current_y_pos, 0)
+                    self.robot.set_steering_drift(math.radians(self.drift))
+                    self.prev_x_pos = self.robot.x
+                    self.prev_cte = self.robot.y
+                    self.int_cte = 0
 
         # calculate scroll amount from the change in x position of the robot
         self.scroll += self.robot.x - self.prev_x_pos
@@ -86,7 +110,6 @@ class PIDControlGUI(RobotGUI):
             self.screen.blit(self.bg_image, (i*self.bg_image_width - self.scroll, 0))
         if self.scroll > self.bg_image_width:
             self.scroll = 0
-            print('reset scroll')
 
         cte = self.robot.y
         diff_cte = (self.robot.y - self.prev_cte) / self.dt
@@ -95,7 +118,7 @@ class PIDControlGUI(RobotGUI):
         steer = self.calculate_steering_command(cte, diff_cte, self.int_cte, self.proportional_gain,
                                                 self.integral_gain, self.differential_gain)
         self.robot.move(steer, self.robot_speed)
-        # print(cte)
+
         # convert robot coords to screen coords and draw the robot on the screen
         robot_x, robot_y = self.world2screen((self.robot.x, self.robot.y))
         # fix robot screen position to initial position
@@ -110,13 +133,12 @@ class PIDControlGUI(RobotGUI):
         self.draw_label('CTE: ' + str(round(cte, 2)), x=10, y=10)
         # draw labels to show PID parameters
         self.draw_label('P: ' + str(round(self.proportional_gain, 4)), x=10, y=30)
-        self.draw_label('I: ' + str(round(self.integral_gain, 4)), x=10, y=50)
+        self.draw_label('I: ' + str(round(self.integral_gain, 8)), x=10, y=50)
         self.draw_label('D: ' + str(round(self.differential_gain, 4)), x=10, y=70)
         # draw label to show drift
         self.draw_label('Drift: ' + str(round(math.degrees(self.robot.steering_drift), 2)), x=10, y=90)
         # draw label to show speed
         self.draw_label('Speed: ' + str(self.robot_speed), x=10, y=110)
-
 
     def draw_label(self, text, x, y):
         text_surface = self.font.render(text, True, (255, 255, 255))
@@ -124,22 +146,25 @@ class PIDControlGUI(RobotGUI):
         text_rect.topleft = (x, y)
         self.screen.blit(text_surface, text_rect)
 
-
-    def make_robot(self, image=None):
+    def make_robot(self, image=None, x=0, y=0, angle=0):
         """ Creates robot object and sets initial position """
         robot = RobotCar(length=self.car_length) if image is None else RobotCar(image=image, length=self.car_length)
-        robot.set(self.x_init, self.y_init, 0)
+        robot.set(x, y, angle)
         robot.set_steering_drift(math.radians(self.drift))
         return robot
 
-    def run(self, robot, params, n=100, speed=1.0):
+    def run(self, robot, params, n=200, speed=1.0):
         """Simulate 2n time-steps of the robot moving at a constant speed.
         Return the average squared cte over the last n time-steps."""
         err = 0
         prev_cte = robot.y
+        prev_x_pos = robot.x
         int_cte = 0
         for i in range(2 * n):
             cte = robot.y
+            delta_x = robot.x - prev_x_pos
+            if delta_x < 0:
+                cte += delta_x*0.001
             diff_cte = cte - prev_cte
             int_cte += cte
             prev_cte = cte
@@ -151,32 +176,36 @@ class PIDControlGUI(RobotGUI):
         print('average error: ', average_error)
         return average_error
 
-    def twiddle(self, tolerance=0.1):
+    def twiddle(self, x, y, tolerance=0.0001, angle=0, n=200, speed=1.0):
         """
         This function is used to tune the PID controller parameters.
+        It takes the current state of the robot and calculates the best parameters.
+        Tolerance is the sum of the probing values. (as twiddle converges the sum gets smaller)
         """
         # initial proportional, derivative, integral gains
         p = [0.0, 0.0, 0.0]
         # initial probing values
-        dp = [1.0, 1.0, 1.0]
-        robot = self.make_robot()
-        best_err = self.run(robot, p, speed=self.robot_speed)
+        dp = [.5, 1, .5]
+        robot = self.make_robot(x=x, y=y, angle=angle)
+        best_err = self.run(robot, p, speed=speed)
         it = 0
         while sum(dp) > tolerance:
             print("Iteration {}, best error = {}".format(it, best_err))
             for i in range(len(p)):
                 p[i] += dp[i]
-                robot = self.make_robot()
-                err = self.run(robot, p, speed=self.robot_speed)
-
+                robot = self.make_robot(x=x, y=y, angle=angle)
+                err = self.run(robot, p, speed=speed)
+                # print parameters and error
+                print('P: ', p, 'err: ', err)
                 if err < best_err:
                     best_err = err
                     dp[i] *= 1.1
                 else:
                     p[i] -= 2 * dp[i]
-                    robot = self.make_robot()
-                    err = self.run(robot, p, speed=self.robot_speed)
-
+                    robot = self.make_robot(x=x, y=y, angle=angle)
+                    err = self.run(robot, p, speed=speed)
+                    # print parameters and error
+                    print('P: ', p, 'err: ', err)
                     if err < best_err:
                         best_err = err
                         dp[i] *= 1.1
