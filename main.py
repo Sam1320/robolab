@@ -9,10 +9,10 @@ import src.menus as menus
 class MainGUI():
     def __init__(self):
         pygame.init()
-        self.surface = pygame.display.set_mode((900, 600))
+        self.surface = pygame.display.set_mode((env.MENU_WIDTH, env.MENU_HEIGHT))
         pygame.display.set_caption('')
         self.game = None
-        self.menu = pygame_menu.Menu('RoboLab', 900, 600,
+        self.menu = pygame_menu.Menu('RoboLab', env.MENU_WIDTH, env.MENU_HEIGHT,
                                 theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.EXIT)
         self.image = None
         self.guis = [('Histogram Filter',),('Particle Filter',), ('Kalman Filter 1D',), ('Kalman Filter 2D',), ('A*',),
@@ -22,7 +22,7 @@ class MainGUI():
         self.image = self.menu.add.image(os.path.join(env.images_path, 'histogram_filter_thumbnail_resized.png'))
         self.menu.add.button('Next', self.start_the_game)
         self.menu.add.button('Quit', pygame_menu.events.EXIT)
-        self.game = 'Particle Filter'
+        self.game = self.guis[0][0]
 
     def start(self):
         self.menu.mainloop(self.surface)
@@ -77,7 +77,7 @@ class MainGUI():
                 self.menu = menus.HistogramFilterMenu('Histogram Filter', self.surface)
 
         self.menu.start()
-        self.surface = pygame.display.set_mode((600, 400))
+        self.surface = pygame.display.set_mode((env.MENU_WIDTH, env.MENU_HEIGHT))
 
 main_gui = MainGUI()
 main_gui.start()
