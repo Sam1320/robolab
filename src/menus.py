@@ -12,6 +12,7 @@ from src import datatypes, a_star, particle_filter, kalman_filter_1d, kalman_fil
 class GameMenu(pygame_menu.Menu):
     def __init__(self, name, surface, width=env.MENU_WIDTH, height=env.MENU_HEIGHT, theme=pygame_menu.themes.THEME_SOLARIZED):
         super().__init__(name, width, height, theme=theme, onclose=pygame_menu.events.BACK)
+        self.add.button('About', self.about)
         self.add.button('Controls', self.controls)
         self.add.button('Settings', self.settings)
         self.add.button('Play', self.start_the_game)
@@ -19,6 +20,9 @@ class GameMenu(pygame_menu.Menu):
         self.surface = surface
         self.gui_class = datatypes.RobotGUI
         self.name = name
+
+    def about(self):
+        pass
 
     def controls(self):
         pass
