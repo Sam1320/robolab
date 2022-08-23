@@ -11,7 +11,7 @@ from src import utils
 
 
 class Kalman_1D(datatypes.RobotGUI):
-    def __init__(self, screen_width=1000, stepsize=10, motion_sigma=10, measurement_sigma=10., initial_uncertainty='big'):
+    def __init__(self, screen_width=1000, stepsize=10, motion_sigma=10, measurement_sigma=10., initial_uncertainty='small'):
         super().__init__(screen_width=screen_width, height_width_ratio=2/3)
         self.step_size = stepsize
         self.moving = False
@@ -20,21 +20,21 @@ class Kalman_1D(datatypes.RobotGUI):
         # start with big uncertainty
         match initial_uncertainty:
             case 'small':
-                uncertainty_scale  = 1e0
+                uncertainty_scale  = 1/2
             case 'medium':
-                uncertainty_scale = 1e1
+                uncertainty_scale = 1e0
             case 'big':
-                uncertainty_scale = 1e5
+                uncertainty_scale = 2
             case _:
                 uncertainty_scale = 1
 
         self.cell_width = self.robot_size*1.2
-        self.world_size = self.screen_width
+        # self.world_size = self.screen_width
         self.plot_width = self.screen_width
         self.plot_height = self.screen_width/3
         self.screen_height = self.plot_height+self.cell_width
 
-        sigma = 200 #self.world_size * uncertainty_scale
+        sigma = self.world_size[0] * uncertainty_scale
         self.robot = datatypes.RobotKalman1D(true_position=robot_x, position_uncertainty=sigma, motion_uncertainty=motion_sigma,
                                    measurement_uncertainty=measurement_sigma, size=self.robot_size)
 

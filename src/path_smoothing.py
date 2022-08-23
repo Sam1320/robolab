@@ -5,12 +5,13 @@ from copy import deepcopy
 
 
 class PathSmoothingGUI(GridGUI):
-    def __init__(self, world_size=(5, 5), load_grid=False, obstacle_prob=0.2):
+    def __init__(self, world_size=(5, 5), load_grid=False, obstacle_prob=0.2, draw_smooth_points=False):
         super().__init__(world_size=world_size, load_grid=load_grid, obstacle_prob=obstacle_prob)
         self.path_coords = []
         self.smoothed_path_coords = []
         self.data_weigth = 0.5
         self.smooth_weight = 0.5
+        self.draw_smooth_points = draw_smooth_points
         # extend the length of the path by n between each point depending on the number of cells (smoother lines)
         if 2 < world_size[0] * world_size[1] < 20:
             self.extend_path_n = 8
@@ -36,7 +37,6 @@ class PathSmoothingGUI(GridGUI):
         self.data_weigth = max(0, self.data_weigth)
         self.data_weigth = min(0.5, self.data_weigth)
 
-
     def update_grid_state(self):
         if self.start_pos and self.goal:
             self.grid_state, self.path_coords = utils.a_star_search(self.grid_obstacles, self.start_pos, self.goal,
@@ -45,7 +45,6 @@ class PathSmoothingGUI(GridGUI):
             path_coords_extended = utils.extend_path_length(self.path_coords, n=self.extend_path_n)
             self.smoothed_path_coords = utils.smooth_path(path_coords_extended, weight_smooth=self.smooth_weight,
                                                           weight_data=self.data_weigth)
-
     def draw(self):
         self.screen.fill((0, 0, 0))
         to_blit = []
@@ -61,9 +60,15 @@ class PathSmoothingGUI(GridGUI):
                     to_blit.append(((x, y), policy))
 
         path_coords_screen = self.convert_points_to_screen_coords(self.path_coords)
+        smoothed_path_coords_screen = self.convert_points_to_screen_coords(self.smoothed_path_coords)
+
         # draw path coordinate points
         for point in path_coords_screen:
             pg.draw.circle(self.screen, self.grid_colors['path'], point, self.cell_size / 10)
+        if self.draw_smooth_points:
+            # draw smoothed path coordinate points
+            for point in smoothed_path_coords_screen:
+                pg.draw.circle(self.screen, self.grid_colors['smooth_path'], point, self.cell_size / 10)
 
         if self.path_coords:
             # draw lines from path points

@@ -88,7 +88,6 @@ class Kalman_2D(datatypes.RobotGUI):
         robotx, roboty = self.world2screen(self.robot.pos)
         self.screen.blit(self.robot_img, [(robotx)-self.robot.size//2, roboty-(self.robot.size//2)])
 
-
     def plot2surface(self, mu, sigma):
         rv = multivariate_normal(mu, sigma)
         z = rv.pdf(self.mesh_coords)

@@ -52,7 +52,7 @@ def Gaussian(mu, sigma, x):
 
 
 def resample(weights, particles, N, robotclass):
-    """resample N particles with repetition and resampling probabilities proportional to the weights"""
+    """resample N particles with replacement and resampling probabilities proportional to the weights"""
     # resampling wheel algorithm
     new_particles = []
     i = random.sample(range(len(weights) - 1), 1)[0]
@@ -258,7 +258,6 @@ def optimum_policy2D(grid, init, goal, cost):
 
         while change:
             change = False
-
             for y in range(len(grid)):
                 for x in range(len(grid[0])):
                     for f in range(len(moves)):
@@ -323,16 +322,12 @@ def smooth_path(path, weight_data=0.5, weight_smooth=0.1, tolerance=0.0001):
     newpath = deepcopy(path)
     while True:
         totalChange = 0.
-        for i in range(len(path)):
-            if i != 0 and i != (len(path) - 1):
-                for dim in range(len(path[i])):
-                    oldVal = newpath[i][dim]
-                    newpath[i][dim] = newpath[i][dim] + \
-                                      weight_data * (path[i][dim] - newpath[i][dim]) + \
-                                      weight_smooth * (
-                                                  newpath[i + 1][dim] + newpath[i - 1][dim] - 2 * newpath[i][
-                                              dim])
-                    totalChange += abs(oldVal - newpath[i][dim])
+        for i in range(1, len(path)-1):
+            for dim in range(len(path[i])):
+                oldVal = newpath[i][dim]
+                newpath[i][dim] += weight_data*(path[i][dim] - newpath[i][dim]) + \
+                                  weight_smooth*(newpath[i+1][dim]+newpath[i-1][dim]-2*newpath[i][dim])
+                totalChange += abs(oldVal - newpath[i][dim])
         if totalChange < tolerance:
             break
     return newpath

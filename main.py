@@ -51,7 +51,7 @@ class MainGUI():
 
 
         image = pygame_menu.baseimage.BaseImage(os.path.join(env.images_path, img_name))
-        # image = image.scale(0.25, 0.25)
+        # image = image.scale(0.25, 0.25)/home/sam/Code/reinforcement-learning/openai-gym
         if self.image:
             self.image.set_image(image)
 

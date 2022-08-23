@@ -30,6 +30,7 @@ class OptimumPolicyGUI(GridGUI):
 
     def update_grid_state(self):
         if self.start_pos and self.goal:
+            #TODO: KeyError: 'None' when no path is found
             self.grid_state = utils.optimum_policy2D(self.grid_obstacles, self.start_pos, self.goal, cost=self.costs)
 
 

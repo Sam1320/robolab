@@ -76,7 +76,8 @@ class PIDControlGUI(RobotGUI):
                     self.drift += 1
                     self.robot.set_steering_drift(math.radians(self.drift))
                 elif event.key == pg.K_DOWN:
-                    self.drift = max(0, self.drift - 1)
+                    # self.drift = max(0, self.drift - 1)
+                    self.drift -= 1
                     self.robot.set_steering_drift(math.radians(self.drift))
                 elif event.key == pg.K_t:
                     current_y_pos = self.robot.y

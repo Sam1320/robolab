@@ -180,11 +180,10 @@ class PIDControlMenu(GameMenu):
         table = menu.add.table()
         table.add_row(['Left click', 'increase speed'], cell_padding=8, cell_font_size=20)
         table.add_row(['Right click', 'decrease speed'], cell_padding=8, cell_font_size=20)
-        table.add_row(['Up arrow', 'increase drift'], cell_padding=8, cell_font_size=20)
-        table.add_row(['Down arrow', 'decrease drift'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Up arrow', 'increase left-drift'], cell_padding=8, cell_font_size=20)
+        table.add_row(['Down arrow', 'increase right-drift'], cell_padding=8, cell_font_size=20)
         table.add_row(['T', 'Find best parameters with Twiddle'], cell_padding=8, cell_font_size=20)
         table.add_row(['Escape', 'Exit game'], cell_padding=8, cell_font_size=20)
-        table.add_row(['Enter', 'save map'], cell_padding=8, cell_font_size=20)
         menu.add.button('Back', menu.close)
         menu.mainloop(self.surface)
 
@@ -402,17 +401,17 @@ class KalmanFilter2DMenu(GameMenu):
         pygame.display.set_mode((env.MENU_WIDTH, env.MENU_HEIGHT))
 
 
-class HistogramFilterMenu(GameMenu):
-    def __init__(self, name, surface, width=env.MENU_WIDTH, height=env.MENU_HEIGHT, theme=pygame_menu.themes.THEME_SOLARIZED):
-        super().__init__(name, surface, width, height, theme=theme)
+class HistogramFilterMenu(GridMenu):
+    def __init__(self, name, surface, width=env.MENU_WIDTH, height=env.MENU_HEIGHT):
+        super().__init__(name, surface, width, height)
         # robot motion and sensing probabilities
         self.pHit = .9
         self.pMiss = 0.1
         self.pGood = .8
         self.pOvershoot = 0.5
         self.pUndershoot = 1 - self.pOvershoot
-        self.grid_width = 10
-        self.grid_height = 10
+        self.width = 10
+        self.height = 10
 
     def controls(self):
         menu = pygame_menu.Menu(f'{self.name} Controls', env.MENU_WIDTH, env.MENU_HEIGHT, theme=pygame_menu.themes.THEME_SOLARIZED,
@@ -431,8 +430,8 @@ class HistogramFilterMenu(GameMenu):
         menu = pygame_menu.Menu(f'{self.name} Settings', env.MENU_WIDTH, env.MENU_HEIGHT, theme=pygame_menu.themes.THEME_SOLARIZED,
                                 onclose=pygame_menu.events.BACK)
         menu.add.vertical_margin(25)
-        menu.add.range_slider('Grid Width :', default=self.grid_width, range_values=(1, 50), increment=1, onchange=self.set_width)
-        menu.add.range_slider('Grid Height :', default=self.grid_height, range_values=(1, 50), increment=1, onchange=self.set_height)
+        menu.add.range_slider('Grid Width :', default=self.width, range_values=(1, 50), increment=1, onchange=self.set_width)
+        menu.add.range_slider('Grid Height :', default=self.height, range_values=(1, 50), increment=1, onchange=self.set_height)
         menu.add.range_slider('Good probability:', default=self.pGood, range_values=(0, 1), increment=0.1,
                                 onchange=self.set_pGood)
         self.overshoot_slider = menu.add.range_slider('Overshoot Probability:', default=self.pOvershoot, range_values=(0, 1), increment=0.1,
@@ -445,12 +444,6 @@ class HistogramFilterMenu(GameMenu):
                                 onchange=self.set_miss_prob)
         menu.add.button('Save', menu.close)
         menu.mainloop(self.surface)
-
-    def set_width(self, value):
-        self.grid_width = value
-
-    def set_height(self, value):
-        self.grid_height = value
 
     def set_pGood(self, value):
         self.pGood = value
@@ -472,7 +465,7 @@ class HistogramFilterMenu(GameMenu):
         self.pMiss = value
 
     def start_the_game(self):
-        self.gui = histogram_filter.HistogramFilterGUI(world_size=(self.grid_width, self.grid_height), pHit=self.pHit,
+        self.gui = histogram_filter.HistogramFilterGUI(world_size=(self.width, self.height), pHit=self.pHit,
                                                        pMiss=self.pMiss, pGood=self.pGood, pOvershoot=self.pOvershoot,
                                                        pUndershoot=self.pUndershoot)
         self.gui.start()
@@ -482,7 +475,7 @@ class HistogramFilterMenu(GameMenu):
 class KalmanFilter1DMenu(GameMenu):
     def __init__(self, name, surface, width=env.MENU_WIDTH, height=env.MENU_HEIGHT, theme=pygame_menu.themes.THEME_SOLARIZED):
         super().__init__(name, surface, width, height, theme=theme)
-        self.initial_uncertainty = 'big'
+        self.initial_uncertainty = 'small'
         self.step_size = 1
         self.motion_noise = 1
         self.sense_noise = 5
@@ -506,7 +499,7 @@ class KalmanFilter1DMenu(GameMenu):
     def settings(self):
         menu = pygame_menu.Menu(f'{self.name} Settings', env.MENU_WIDTH, env.MENU_HEIGHT, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         menu.add.vertical_margin(25)
-        menu.add.selector('Initial uncertainty:', [('small', 0), ('medium', 1), ('big', 2)],  default=2, onchange=self.set_init_uncertainty)
+        menu.add.selector('Initial uncertainty:', [('small', 0), ('medium', 1), ('big', 2)],  default=0, onchange=self.set_init_uncertainty)
         menu.add.range_slider('Sense noise:', default=self.sense_noise, range_values=(0, 50), increment=1, onchange=self.set_sense_noise)
         menu.add.range_slider('Motion noise:', default=self.motion_noise, range_values=(0, 10), increment=1, onchange=self.set_motion_noise)
         menu.add.range_slider('Step size:', default=self.step_size, range_values=(1, 10), increment=1, onchange=self.set_step_size)
