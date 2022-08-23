@@ -1,7 +1,8 @@
 import math
 import os.path
-
 import pygame as pg
+import numpy as np
+
 import env
 from src.datatypes import RobotGUI, RobotCar
 
@@ -70,8 +71,7 @@ class PIDControlGUI(RobotGUI):
                 elif event.key == pg.K_RIGHT:
                     self.robot_speed += 1
                 elif event.key == pg.K_LEFT:
-                    # truncate minimum scroll speed to 0
-                    self.robot_speed = max(0, self.robot_speed - 1)
+                    self.robot_speed -= 1
                 elif event.key == pg.K_UP:
                     self.drift += 1
                     self.robot.set_steering_drift(math.radians(self.drift))
@@ -107,9 +107,9 @@ class PIDControlGUI(RobotGUI):
         self.prev_x_pos = self.robot.x
 
         # Draw one background image per tile and scroll it
-        for i in range(self.n_tiles):
+        for i in np.array(range(self.n_tiles))-self.n_tiles//2:
             self.screen.blit(self.bg_image, (i*self.bg_image_width - self.scroll, 0))
-        if self.scroll > self.bg_image_width:
+        if abs(self.scroll) > self.bg_image_width:
             self.scroll = 0
 
         cte = self.robot.y

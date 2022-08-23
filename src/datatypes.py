@@ -71,7 +71,6 @@ class RobotCar(object):
             steering = max_steering_angle
         if steering < -max_steering_angle:
             steering = -max_steering_angle
-        speed = max(0, speed)
         distance = speed * dt
 
         # apply noise

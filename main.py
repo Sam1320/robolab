@@ -48,6 +48,8 @@ class MainGUI():
                 img_name = 'pid_control_thumbnail_resized.png'
             case 'Histogram Filter':
                 img_name = 'histogram_filter_thumbnail_resized.png'
+            case _:
+                raise ValueError(f"{self.game} is not a valid interface name.")
 
 
         image = pygame_menu.baseimage.BaseImage(os.path.join(env.images_path, img_name))
