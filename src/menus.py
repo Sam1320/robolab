@@ -320,7 +320,7 @@ class ParticleMenu(GameMenu):
         menu = pygame_menu.Menu(f'{self.name} Settings', env.MENU_WIDTH, env.MENU_HEIGHT, theme=pygame_menu.themes.THEME_SOLARIZED, onclose=pygame_menu.events.BACK)
         menu.add.vertical_margin(25)
         menu.add.range_slider('Number of Particles:', default=self.number_of_particles, range_values=[10, 100, 200, env.MENU_HEIGHT, 800], onchange=self.set_number_of_particles)
-        menu.add.range_slider('Number of Celestial Bodies:', default=self.number_of_planets, range_values=(1, 7), increment=1, onchange=self.set_number_of_planets)
+        menu.add.range_slider('Number of Celestial Bodies:', default=self.number_of_planets,  range_values=list(range(1, 4)), onchange=self.set_number_of_planets)
         menu.add.range_slider('Forward noise:', default=self.forward_noise, range_values=(0, 5), increment=0.05, onchange=self.set_forward_noise)
         menu.add.range_slider('Turning noise:', default=self.turning_noise, range_values=(0, 5), increment=0.05, onchange=self.set_turning_noise)
         menu.add.range_slider('Sense noise:', default=self.sense_noise, range_values=(0, 20), increment=1, onchange=self.set_sense_noise)
