@@ -373,10 +373,12 @@ class GridGUI(RobotGUI):
 
     def handle_right_click(self):
         pos = pg.mouse.get_pos()
-        if self.goal:
-            self.grid_state[self.goal[0]][self.goal[1]] = ' '
-        self.goal = list(self.coords_to_row_col(pos[0], pos[1]))
-        self.grid_state[self.goal[0]][self.goal[1]] = '*'
+        pos = list(self.coords_to_row_col(pos[0], pos[1]))
+        if not self.grid_obstacles[pos[0]][pos[1]]:
+            if self.goal:
+                self.grid_state[self.goal[0]][self.goal[1]] = ' '
+            self.grid_state[pos[0]][pos[1]] = '*'
+            self.goal = pos
 
     def coords_to_row_col(self, x, y):
         """Converts x y coordinates to col and row numbers."""

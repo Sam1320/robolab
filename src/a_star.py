@@ -9,10 +9,15 @@ class AStartGUI(GridGUI):
 
     def handle_left_click(self):
         pos = pg.mouse.get_pos()
-        if self.start_pos:
-            self.grid_state[self.start_pos[0]][self.start_pos[1]] = ' '
-        self.start_pos = list(self.coords_to_row_col(pos[0], pos[1]))
-        self.grid_state[self.start_pos[0]][self.start_pos[1]] = 'S'
+        pos = list(self.coords_to_row_col(pos[0], pos[1]))
+        # only execute command if cell is free
+        if not self.grid_obstacles[pos[0]][pos[1]]:
+            # clear the previous cell
+            if self.start_pos:
+                self.grid_state[self.start_pos[0]][self.start_pos[1]] = ' '
+            self.grid_state[pos[0]][pos[1]] = 'S'
+            self.start_pos = pos
+
 
     def update_grid_state(self):
         if self.start_pos and self.goal:
