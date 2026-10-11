@@ -1,5 +1,5 @@
-# robolab
-game-like interface for visualizing basic robotic algorithms.
+# Robolab
+Game-like interface for visualizing basic robotic algorithms. This project was developed in the context of my [Bachelor Thesis](Bachelor_Thesis.pdf) at the University of Potsdam, Germany.
 
 ## Set-up
 - Make sure your python version is >=3.10.
